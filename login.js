@@ -46,16 +46,20 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const username = document.getElementById('username').value;
+    const username = document.getElementById('username').value.trim();
+    // Format username to match registration format (capitalize first letter)
+    const formattedUsername = username.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
 
     try {
         // Check if user exists
-        const response = await fetch(`/api/check-username/${username}`);
+        const response = await fetch(`/api/check-username/${encodeURIComponent(formattedUsername)}`);
         const data = await response.json();
 
         if (data.exists) {
             // Store the username in localStorage
-            localStorage.setItem('username', username);
+            localStorage.setItem('username', formattedUsername);
             // Redirect to main page
             window.location.href = '/web.html';
         } else {

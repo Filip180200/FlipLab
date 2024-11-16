@@ -235,8 +235,12 @@ app.post('/api/register', async (req, res) => {
     try {
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
         
+        // Capitalize first letter of each name and make the rest lowercase
+        const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
+        const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
+        
         // Generate username (FirstName LastName)
-        const username = `${firstName.trim()} ${lastName.trim()}`;
+        const username = `${formattedFirstName} ${formattedLastName}`;
             
         // Check if username exists
         const checkResult = await pool.query(
@@ -252,7 +256,7 @@ app.post('/api/register', async (req, res) => {
         await pool.query(
             `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted)
              VALUES ($1, $2, $3, $4, $5, $6)`,
-            [username, firstName, lastName, age, gender, termsAccepted]
+            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted]
         );
 
         res.json({ username });
