@@ -538,7 +538,6 @@ function setupChannelInteractions() {
 // Timer functionality
 let sessionTime = 15 * 60; // 15 minutes in seconds
 const countdownElement = document.getElementById('countdown');
-const clockElement = document.getElementById('clock');
 
 // Start countdown timer
 function startCountdown() {
@@ -559,19 +558,8 @@ function startCountdown() {
     }, 1000);
 }
 
-// Update clock
-function updateClock() {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    clockElement.textContent = `${hours}:${minutes}`;
-}
-
-// Initialize timers
 document.addEventListener('DOMContentLoaded', () => {
     startCountdown();
-    updateClock();
-    setInterval(updateClock, 60000); // Update clock every minute
 
     // Initialize stream stats and buttons first
     setupStreamButtons();
