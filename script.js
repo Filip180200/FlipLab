@@ -85,8 +85,10 @@ function showNotification(message) {
 // Funkcje zarządzania komentarzami
 async function loadComments(isInitialLoad = false) {
     try {
-        const response = await fetch('/api/comments');
-        const comments = await response.json();
+        const [regularComments, simulatedComments] = await Promise.all([
+            fetch('/api/comments').then(res => res.json()),
+            isInitialLoad ? fetch('/api/simulated_comments').then(res => res.json()) : Promise.resolve([])
+        ]);
         
         const chatMessages = document.querySelector('.chat-messages');
         
@@ -94,11 +96,26 @@ async function loadComments(isInitialLoad = false) {
         if (isInitialLoad) {
             chatMessages.innerHTML = '';
             displayedCommentIds.clear();
+            
+            // Schedule simulated comments
+            if (!simulatedCommentsScheduled && simulatedComments.length > 0) {
+                simulatedCommentsScheduled = true;
+                simulatedComments.forEach(comment => {
+                    setTimeout(() => {
+                        if (!displayedCommentIds.has(comment.id)) {
+                            const commentElement = createCommentElement(comment);
+                            chatMessages.appendChild(commentElement);
+                            displayedCommentIds.add(comment.id);
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    }, comment.delay * 1000);
+                });
+            }
         }
         
-        // Add only new comments
+        // Add regular comments
         let hasNewComments = false;
-        comments.forEach(comment => {
+        regularComments.forEach(comment => {
             if (!displayedCommentIds.has(comment.id)) {
                 const commentElement = createCommentElement(comment);
                 chatMessages.appendChild(commentElement);
@@ -107,7 +124,7 @@ async function loadComments(isInitialLoad = false) {
             }
         });
         
-        // Scroll to bottom only if there are new comments or it's initial load
+        // Scroll to bottom if there are new comments
         if (hasNewComments || isInitialLoad) {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
