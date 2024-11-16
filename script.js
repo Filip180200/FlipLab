@@ -83,24 +83,36 @@ function showNotification(message) {
 }
 
 // Funkcje zarządzania komentarzami
-async function loadComments() {
+async function loadComments(isInitialLoad = false) {
     try {
         const response = await fetch('/api/comments');
         const comments = await response.json();
         
         const chatMessages = document.querySelector('.chat-messages');
-        chatMessages.innerHTML = ''; // Clear existing comments
         
+        // On initial load, clear and load all comments
+        if (isInitialLoad) {
+            chatMessages.innerHTML = '';
+            displayedCommentIds.clear();
+        }
+        
+        // Add only new comments
+        let hasNewComments = false;
         comments.forEach(comment => {
-            const commentElement = createCommentElement(comment);
-            chatMessages.appendChild(commentElement);
+            if (!displayedCommentIds.has(comment.id)) {
+                const commentElement = createCommentElement(comment);
+                chatMessages.appendChild(commentElement);
+                displayedCommentIds.add(comment.id);
+                hasNewComments = true;
+            }
         });
         
-        // Scroll to bottom after loading all comments
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Scroll to bottom only if there are new comments or it's initial load
+        if (hasNewComments || isInitialLoad) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
     } catch (error) {
-        console.error('Błąd podczas pobierania komentarzy:', error);
-        showNotification('Error loading comments. Please refresh the page.');
+        console.error('Error loading comments:', error);
     }
 }
 
@@ -487,22 +499,46 @@ function setupChannelInteractions() {
 }
 
 // Inicjalizacja
+async function initializeApp() {
+    // Check if nickname exists
+    const savedNickname = localStorage.getItem('nickname');
+    if (savedNickname) {
+        // Load main content first
+        document.getElementById('mainContent').style.display = 'block';
+        await loadComments(true);  // Initial load with true flag
+        
+        // Hide nickname prompt after content is loaded
+        document.getElementById('nicknamePrompt').style.display = 'none';
+        
+        // Initialize YouTube player
+        if (!window.YT) {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        } else {
+            onYouTubeIframeAPIReady();
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize stream stats and buttons first
     setupStreamButtons();
     setupControlPanel();
     updateStreamStats();
 
-    // Obsługa formularza nicku
-    document.getElementById('nicknameForm').addEventListener('submit', async function(event) {
+    // Handle nickname form
+    document.getElementById('nicknameForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         const nickname = document.getElementById('nickname').value;
+        
         if (nickname.trim()) {
             localStorage.setItem('nickname', nickname);
             
             // Load main content
             document.getElementById('mainContent').style.display = 'block';
-            await loadComments();  // Load initial comments
+            await loadComments(true);  // Initial load with true flag
             
             // Hide nickname prompt after content is loaded
             document.getElementById('nicknamePrompt').style.display = 'none';
@@ -519,36 +555,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Check if nickname exists
-    const savedNickname = localStorage.getItem('nickname');
-    if (savedNickname) {
-        // Load main content first
-        document.getElementById('mainContent').style.display = 'block';
-        loadComments().then(() => {
-            // Hide nickname prompt after content is loaded
-            document.getElementById('nicknamePrompt').style.display = 'none';
-            
-            // Initialize YouTube player
-            if (!window.YT) {
-                const tag = document.createElement('script');
-                tag.src = 'https://www.youtube.com/iframe_api';
-                const firstScriptTag = document.getElementsByTagName('script')[0];
-                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-            } else {
-                onYouTubeIframeAPIReady();
-            }
-        });
-    }
-
-    // Obsługa formularza komentarzy
+    // Handle comment form
     document.getElementById('commentForm').addEventListener('submit', addComment);
 
-    // Odświeżanie komentarzy
-    setInterval(() => loadComments(), 5000);
+    // Refresh comments periodically (without clearing)
+    setInterval(() => loadComments(false), 5000);
 
-    // Aktualizacja statystyk streamu
-    setInterval(updateStreamStats, 1000);
-
-    // Initialize channel interactions
-    setupChannelInteractions();
+    // Initialize the app
+    initializeApp();
 });
