@@ -235,20 +235,17 @@ app.post('/api/register', async (req, res) => {
     try {
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
         
-        // Generate username (firstname_lastname_randomnumber)
-        let username;
-        let usernameExists = true;
-        
-        while (usernameExists) {
-            const randomNum = Math.floor(Math.random() * 1000);
-            username = `${firstName.toLowerCase()}_${lastName.toLowerCase()}_${randomNum}`;
+        // Generate username (FirstName LastName)
+        const username = `${firstName.trim()} ${lastName.trim()}`;
             
-            // Check if username exists
-            const checkResult = await pool.query(
-                'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
-                [username]
-            );
-            usernameExists = checkResult.rows[0].exists;
+        // Check if username exists
+        const checkResult = await pool.query(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
+            [username]
+        );
+        
+        if (checkResult.rows[0].exists) {
+            return res.status(400).json({ error: 'This name is already registered' });
         }
 
         // Insert new user

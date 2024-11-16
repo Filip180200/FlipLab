@@ -27,7 +27,8 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
         });
 
         if (!response.ok) {
-            throw new Error('Registration failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Registration failed');
         }
 
         const data = await response.json();
@@ -37,7 +38,7 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
         window.location.href = '/web.html';
     } catch (error) {
         console.error('Error:', error);
-        alert('Registration failed. Please try again.');
+        alert(error.message);
     }
 });
 
