@@ -207,31 +207,36 @@ html, body {
 #commentForm {
     padding: 15px;
     background: #2d2d2d;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 
-#comment {
+#commentForm input {
     flex: 1;
-    padding: 10px;
+    padding: 8px 12px;
     border: none;
     border-radius: 4px;
-    background: #3d3d3d;
-    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
+    line-height: 24px;
+    vertical-align: middle;
 }
 
-#comment::placeholder {
-    color: #888;
+#commentForm input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
 }
 
 #commentForm button {
-    padding: 10px 20px;
+    padding: 8px 16px;
     border: none;
     border-radius: 4px;
     background: #9147ff;
     color: white;
+    font-weight: bold;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background-color 0.2s;
 }
 
 #commentForm button:hover {
