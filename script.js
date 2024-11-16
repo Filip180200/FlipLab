@@ -6,6 +6,8 @@ const VIDEO_ID = 'jfKfPfyJRdk'; // lofi girl video ID
 // Globalne zmienne do śledzenia stanu
 let displayedCommentIds = new Set();
 let simulatedCommentsScheduled = false;
+let lastCommentTimestamp = new Date().toISOString();
+let commentUpdateInterval;
 let player;
 let streamStartTime = new Date();
 let streamStats = {
@@ -85,15 +87,10 @@ function showNotification(message) {
 // Funkcje zarządzania komentarzami
 async function loadComments(isInitialLoad = false) {
     try {
-        const [regularComments, simulatedComments] = await Promise.all([
-            fetch('/api/comments').then(res => res.json()),
-            isInitialLoad ? fetch('/api/simulated_comments').then(res => res.json()) : Promise.resolve([])
-        ]);
-        
-        const chatMessages = document.querySelector('.chat-messages');
-        
-        // On initial load, clear and load all comments
+        // Only load simulated comments on initial load
         if (isInitialLoad) {
+            const simulatedComments = await fetch('/api/simulated_comments').then(res => res.json());
+            const chatMessages = document.querySelector('.chat-messages');
             chatMessages.innerHTML = '';
             displayedCommentIds.clear();
             
@@ -111,26 +108,49 @@ async function loadComments(isInitialLoad = false) {
                     }, comment.delay * 1000);
                 });
             }
-        }
-        
-        // Add regular comments
-        let hasNewComments = false;
-        regularComments.forEach(comment => {
-            if (!displayedCommentIds.has(comment.id)) {
-                const commentElement = createCommentElement(comment);
-                chatMessages.appendChild(commentElement);
-                displayedCommentIds.add(comment.id);
-                hasNewComments = true;
-            }
-        });
-        
-        // Scroll to bottom if there are new comments
-        if (hasNewComments || isInitialLoad) {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Start polling for new real-time comments
+            startRealTimeComments();
         }
     } catch (error) {
         console.error('Error loading comments:', error);
     }
+}
+
+// New function to handle real-time comments
+async function startRealTimeComments() {
+    // Clear any existing interval
+    if (commentUpdateInterval) {
+        clearInterval(commentUpdateInterval);
+    }
+
+    // Poll for new comments every 2 seconds
+    commentUpdateInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}`);
+            const newComments = await response.json();
+            
+            if (newComments.length > 0) {
+                const chatMessages = document.querySelector('.chat-messages');
+                newComments.forEach(comment => {
+                    if (!displayedCommentIds.has(comment.id)) {
+                        const commentElement = createCommentElement(comment);
+                        chatMessages.appendChild(commentElement);
+                        displayedCommentIds.add(comment.id);
+                        addCommentToCache(comment.username, comment);
+                    }
+                });
+                
+                // Update the last timestamp
+                lastCommentTimestamp = newComments[0].timestamp;
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        } catch (error) {
+            console.error('Error fetching new comments:', error);
+        }
+    }, 2000);
 }
 
 function addSingleComment(comment, scrollToBottom = true) {
@@ -576,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('commentForm').addEventListener('submit', addComment);
 
     // Refresh comments periodically (without clearing)
-    setInterval(() => loadComments(false), 5000);
+    //setInterval(() => loadComments(false), 5000);
 
     // Initialize the app
     initializeApp();
