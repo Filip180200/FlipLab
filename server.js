@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
 
 const PORT = process.env.PORT || 3001;
 
@@ -36,6 +37,7 @@ const app = express();
 // Middleware setup
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, './')));
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -235,6 +237,9 @@ app.get('/api/user/:username/last-comments', getLastThreeComments);
 app.post('/api/report', reportUser);
 app.get('/api/simulated_comments', getSimulatedComments);
 app.post('/api/simulated_comment', addSimulatedComment);
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Error handling middleware (should be last)
 app.use(errorHandler);
