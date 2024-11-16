@@ -32,15 +32,62 @@
     }
 }
 
-/* Animation Classes */
-.animate-slide-in {
-    animation: slideIn 0.3s ease-out forwards;
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
-.animate-fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-.animate-slide-up {
-    animation: slideUp 0.3s ease-out forwards;
+/* Animation Utility Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Transition Utilities */
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+.transition-transform {
+    transition: transform 0.3s ease;
+}
+
+.transition-opacity {
+    transition: opacity 0.3s ease;
+}
+
+/* Hover Effects */
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.hover-bright:hover {
+    filter: brightness(1.2);
+}
+
+.hover-fade:hover {
+    opacity: 0.8;
 }

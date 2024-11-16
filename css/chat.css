@@ -1,6 +1,7 @@
 /* ==========================================================================
    Chat Section Styles
    ========================================================================== */
+
 .chat-section {
     width: 340px;
     background: #0e0e10;
@@ -15,6 +16,9 @@
     flex: 1;
     overflow-y: auto;
     padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .chat-message {
@@ -31,6 +35,59 @@
 
 .message-text {
     color: #efeff1;
+}
+
+/* Comment Styles */
+.comment {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 4px;
+    opacity: 0;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.comment-content-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.avatar-container {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.text-container {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.username {
+    color: #00ff00;
+    margin: 0;
+    padding: 0;
+    display: inline;
+    font-weight: bold;
+}
+
+.message {
+    margin: 0;
+    word-wrap: break-word;
+    color: #ffffff;
+}
+
+.comment p {
+    margin: 0;
+    font-size: 1rem;
 }
 
 .chat-input {
@@ -62,4 +119,36 @@
 
 .reported-message .username {
     color: #808080 !important;
+}
+
+/* Recent Comments */
+.recent-comments {
+    background: #18181b;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 12px 0;
+}
+
+.recent-comments h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #efeff1;
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.comments-list .comment {
+    background: #1f1f23;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #dedee3;
+}
+
+.new-comment {
+    animation: fadeIn 0.3s ease-in;
 }

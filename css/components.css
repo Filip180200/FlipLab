@@ -54,9 +54,28 @@
     font-size: 14px;
 }
 
-/* ==========================================================================
-   Button Styles
-   ========================================================================== */
+.stream-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.stream-stats span {
+    color: #adadb8;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stream-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    z-index: 2;
+}
+
+/* Button Styles */
 .follow-btn,
 .subscribe-btn,
 .settings-btn {
@@ -90,18 +109,24 @@
 }
 
 .settings-btn {
-    background: transparent;
-    color: #efeff1;
-    padding: 8px;
+    padding: 8px !important;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3a3a3d;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
 }
 
 .settings-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #464649;
 }
 
-/* ==========================================================================
-   Tag Styles
-   ========================================================================== */
+/* Tag Styles */
 .stream-tags {
     padding: 0 16px 16px;
     display: flex;
@@ -122,4 +147,64 @@
 
 .tag:hover {
     background: #3d3d3d;
+}
+
+/* Comment Form Styles */
+#commentForm {
+    padding: 15px;
+    background: #2d2d2d;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 8px;
+}
+
+#commentForm input {
+    flex: 1;
+    height: 40px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
+}
+
+#commentForm input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+#commentForm button {
+    height: 40px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 4px;
+    background: #9147ff;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#commentForm button:hover {
+    background: #772ce8;
+}
+
+/* Logo Styles */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+}
+
+.logo-icon {
+    font-size: 24px;
+    color: #9147ff;
+    animation: spin 2s linear infinite;
+}
+
+.site-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
 }

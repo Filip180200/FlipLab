@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Notification & Control Panel Styles
+   Notification & Modal Styles
    ========================================================================== */
 .notification {
     position: fixed;
@@ -52,36 +52,73 @@
     background: #772ce8;
 }
 
-.control-panel {
+/* Modal Styles */
+.modal {
+    display: none;
     position: fixed;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    background: #18181b;
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    z-index: 100;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
 }
 
-.control-btn {
-    background: #9147ff;
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+}
+
+/* Report Modal Styles */
+#reportModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #333;
+    padding: 20px;
+    border-radius: 10px;
+    display: none;
+    color: white;
+    z-index: 1000;
+}
+
+.report-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.report-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+#reportButton {
+    background-color: #e74c3c;
     color: white;
     border: none;
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s;
 }
 
-.control-btn:hover {
-    background: #772ce8;
-}
-
-.control-btn.active {
-    background: #772ce8;
+#reportButton:hover {
+    background-color: #c0392b;
 }
