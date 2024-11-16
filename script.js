@@ -125,14 +125,16 @@ async function loadComments(isInitialLoad = false) {
 }
 
 function addSingleComment(comment, scrollToBottom = true) {
-    const commentsContainer = document.getElementById('comments');
+    const chatMessages = document.querySelector('.chat-messages');
     const commentElement = createCommentElement(comment);
-    
-    commentsContainer.appendChild(commentElement);
+    chatMessages.appendChild(commentElement);
 
     if (scrollToBottom) {
-        commentsContainer.scrollTop = commentsContainer.scrollHeight;
+        commentElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
+
+    // Store the comment ID to avoid duplicates
+    displayedCommentIds.add(comment.id);
 }
 
 function createCommentElement(comment) {
