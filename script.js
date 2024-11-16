@@ -83,44 +83,24 @@ function showNotification(message) {
 }
 
 // Funkcje zarządzania komentarzami
-async function loadComments(isInitialLoad = false) {
+async function loadComments() {
     try {
-        const [regularComments, simulatedComments] = await Promise.all([
-            fetchData('/api/comments'),
-            fetchData('/api/simulated_comments')
-        ]);
-
-        if (isInitialLoad) {
-            const allComments = [...regularComments];
-            allComments
-                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-                .forEach(comment => {
-                    if (!displayedCommentIds.has(comment.id)) {
-                        displayedCommentIds.add(comment.id);
-                        addSingleComment(comment, false);
-                    }
-                });
-        } else {
-            regularComments.forEach(comment => {
-                if (!displayedCommentIds.has(comment.id)) {
-                    displayedCommentIds.add(comment.id);
-                    addSingleComment(comment, true);
-                }
-            });
-        }
-
-        // Zaplanuj symulowane komentarze tylko raz
-        if (!simulatedCommentsScheduled) {
-            simulatedCommentsScheduled = true;
-            simulatedComments.forEach(comment => {
-                if (!displayedCommentIds.has(comment.id)) {
-                    displayedCommentIds.add(comment.id);
-                    setTimeout(() => addSingleComment(comment, true), comment.delay * 1000);
-                }
-            });
-        }
+        const response = await fetch('/api/comments');
+        const comments = await response.json();
+        
+        const chatMessages = document.querySelector('.chat-messages');
+        chatMessages.innerHTML = ''; // Clear existing comments
+        
+        comments.forEach(comment => {
+            const commentElement = createCommentElement(comment);
+            chatMessages.appendChild(commentElement);
+        });
+        
+        // Scroll to bottom after loading all comments
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     } catch (error) {
         console.error('Błąd podczas pobierania komentarzy:', error);
+        showNotification('Error loading comments. Please refresh the page.');
     }
 }
 
@@ -292,10 +272,17 @@ async function addComment(event) {
             comment: comment,
             timestamp: new Date().toISOString()
         };
-        addSingleComment(commentObj, true);
-
-        // Clear input
+        
+        // Clear input before adding comment to prevent double-posting
         commentInput.value = '';
+        
+        // Add the comment to the chat
+        const chatMessages = document.querySelector('.chat-messages');
+        const commentElement = createCommentElement(commentObj);
+        chatMessages.appendChild(commentElement);
+        
+        // Scroll to the new comment smoothly
+        commentElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
     } catch (error) {
         console.error('Błąd podczas dodawania komentarza:', error);
         showNotification('Error adding comment. Please try again.');
@@ -515,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Load main content
             document.getElementById('mainContent').style.display = 'block';
-            await loadComments(true);  // Load initial comments
+            await loadComments();  // Load initial comments
             
             // Hide nickname prompt after content is loaded
             document.getElementById('nicknamePrompt').style.display = 'none';
@@ -537,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedNickname) {
         // Load main content first
         document.getElementById('mainContent').style.display = 'block';
-        loadComments(true).then(() => {
+        loadComments().then(() => {
             // Hide nickname prompt after content is loaded
             document.getElementById('nicknamePrompt').style.display = 'none';
             
@@ -557,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('commentForm').addEventListener('submit', addComment);
 
     // Odświeżanie komentarzy
-    setInterval(() => loadComments(false), 5000);
+    setInterval(() => loadComments(), 5000);
 
     // Aktualizacja statystyk streamu
     setInterval(updateStreamStats, 1000);
