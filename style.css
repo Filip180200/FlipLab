@@ -2,9 +2,425 @@
    Main Stylesheet - Imports all modular CSS files
    ========================================================================== */
 
-   @import 'css/base.css';
-   @import 'css/layout.css';
-   @import 'css/components.css';
-   @import 'css/chat.css';
-   @import 'css/animations.css';
-   @import 'css/notifications.css';
+@import url('./css/base.css');
+@import url('./css/layout.css');
+@import url('./css/components.css');
+@import url('./css/chat.css');
+@import url('./css/animations.css');
+@import url('./css/notifications.css');
+
+/* ==========================================================================
+   Base & Reset Styles
+   ========================================================================== */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #181818;
+    color: white;
+    overflow: hidden;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #9147ff rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #9147ff;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #7f2cff;
+}
+
+/* ==========================================================================
+   Layout & Container Styles
+   ========================================================================== */
+.content-wrapper {
+    display: flex;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    gap: 20px;
+    background-color: #181818;
+    overflow: hidden;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    min-width: 0;
+}
+
+.video-section {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.video-container {
+    width: 100%;
+    background: #0e0e10;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#player {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    position: relative;
+}
+
+/* Login page specific layout */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #181818;
+    color: white;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   Stream Info & Channel Styles
+   ========================================================================== */
+.stream-info {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    background: #0e0e10;
+    position: relative;
+    z-index: 1;
+}
+
+.channel-info {
+    display: flex;
+    gap: 16px;
+    opacity: 1;
+    transform: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+
+.channel-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.channel-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.channel-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.channel-name {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.channel-game {
+    margin: 4px 0;
+    color: #adadb8;
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   Button Styles
+   ========================================================================== */
+.follow-btn,
+.subscribe-btn,
+.settings-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.follow-btn {
+    background: #3a3a3d;
+    color: white;
+}
+
+.follow-btn:hover {
+    background: #4a4a4d;
+}
+
+.subscribe-btn {
+    background: #9147ff;
+    color: white;
+}
+
+.subscribe-btn:hover {
+    background: #772ce8;
+}
+
+.settings-btn {
+    background: transparent;
+    color: #efeff1;
+    padding: 8px;
+}
+
+.settings-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   Tag Styles
+   ========================================================================== */
+.stream-tags {
+    padding: 0 16px 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: #0e0e10;
+}
+
+.tag {
+    background: #2d2d2d;
+    color: #adadb8;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.tag:hover {
+    background: #3d3d3d;
+}
+
+/* ==========================================================================
+   Chat Section Styles
+   ========================================================================== */
+.chat-section {
+    width: 340px;
+    background: #0e0e10;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 93%;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.chat-message {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.username {
+    font-weight: 600;
+    color: #9147ff;
+}
+
+.message-text {
+    color: #efeff1;
+}
+
+.chat-input {
+    padding: 16px;
+    background: #0e0e10;
+    border-top: 1px solid #2d2d2d;
+}
+
+.chat-input textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #2d2d2d;
+    border-radius: 4px;
+    background: #18181b;
+    color: #efeff1;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.chat-input textarea:focus {
+    outline: none;
+    border-color: #9147ff;
+}
+
+.reported-message {
+    color: #808080;
+}
+
+.reported-message .username {
+    color: #808080 !important;
+}
+
+/* ==========================================================================
+   Notification & Control Panel Styles
+   ========================================================================== */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: #1a1a1a;
+    border-left: 4px solid #9147ff;
+    border-radius: 4px;
+    color: #ffffff;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.warning {
+    border-left-color: #ffd700;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-message {
+    margin: 0;
+    font-size: 14px;
+}
+
+.notification-timer {
+    font-size: 12px;
+    color: #adadb8;
+    margin-top: 4px;
+}
+
+.notification-button {
+    padding: 6px 12px;
+    background: #9147ff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.notification-button:hover {
+    background: #772ce8;
+}
+
+.control-panel {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    background: #18181b;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 100;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn {
+    background: #9147ff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.control-btn:hover {
+    background: #772ce8;
+}
+
+.control-btn.active {
+    background: #772ce8;
+}
+
+/* ==========================================================================
+   Animation Keyframes
+   ========================================================================== */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

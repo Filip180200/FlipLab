@@ -5,12 +5,51 @@
     position: fixed;
     top: 20px;
     right: 20px;
-    padding: 12px 24px;
-    background: #9147ff;
-    color: white;
+    padding: 16px 24px;
+    background: #1a1a1a;
+    border-left: 4px solid #9147ff;
     border-radius: 4px;
+    color: #ffffff;
     z-index: 1000;
-    animation: slideIn 0.3s ease-out forwards;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.warning {
+    border-left-color: #ffd700;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-message {
+    margin: 0;
+    font-size: 14px;
+}
+
+.notification-timer {
+    font-size: 12px;
+    color: #adadb8;
+    margin-top: 4px;
+}
+
+.notification-button {
+    padding: 6px 12px;
+    background: #9147ff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.notification-button:hover {
+    background: #772ce8;
 }
 
 .control-panel {
