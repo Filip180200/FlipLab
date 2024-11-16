@@ -275,18 +275,28 @@ async function addComment(event) {
     if (!comment) return;
     
     try {
-        await postData('/api/comment', {
+        const response = await postData('/api/comment', {
             username: nickname,
             comment: comment
         });
 
-        // Dodaj komentarz do cache
+        // Add comment to cache
         addCommentToCache(nickname, comment);
 
+        // Create and display the comment immediately
+        const commentObj = {
+            id: Date.now(),  // Temporary ID
+            username: nickname,
+            comment: comment,
+            timestamp: new Date().toISOString()
+        };
+        addSingleComment(commentObj, true);
+
+        // Clear input
         commentInput.value = '';
-        setTimeout(() => loadComments(false), 500);
     } catch (error) {
         console.error('Błąd podczas dodawania komentarza:', error);
+        showNotification('Error adding comment. Please try again.');
     }
 }
 
@@ -495,13 +505,18 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStreamStats();
 
     // Obsługa formularza nicku
-    document.getElementById('nicknameForm').addEventListener('submit', function(event) {
+    document.getElementById('nicknameForm').addEventListener('submit', async function(event) {
         event.preventDefault();
         const nickname = document.getElementById('nickname').value;
         if (nickname.trim()) {
             localStorage.setItem('nickname', nickname);
-            document.getElementById('nicknamePrompt').style.display = 'none';
+            
+            // Load main content
             document.getElementById('mainContent').style.display = 'block';
+            await loadComments(true);  // Load initial comments
+            
+            // Hide nickname prompt after content is loaded
+            document.getElementById('nicknamePrompt').style.display = 'none';
             
             // Initialize YouTube player after showing main content
             if (!window.YT) {
@@ -518,26 +533,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if nickname exists
     const savedNickname = localStorage.getItem('nickname');
     if (savedNickname) {
-        document.getElementById('nicknamePrompt').style.display = 'none';
+        // Load main content first
         document.getElementById('mainContent').style.display = 'block';
-        
-        // Initialize YouTube player if nickname exists
-        if (!window.YT) {
-            const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api';
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        } else {
-            onYouTubeIframeAPIReady();
-        }
+        loadComments(true).then(() => {
+            // Hide nickname prompt after content is loaded
+            document.getElementById('nicknamePrompt').style.display = 'none';
+            
+            // Initialize YouTube player
+            if (!window.YT) {
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                const firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            } else {
+                onYouTubeIframeAPIReady();
+            }
+        });
     }
 
     // Obsługa formularza komentarzy
     document.getElementById('commentForm').addEventListener('submit', addComment);
 
-    // Pierwsze ładowanie komentarzy
-    loadComments(true);
-    
     // Odświeżanie komentarzy
     setInterval(() => loadComments(false), 5000);
 
