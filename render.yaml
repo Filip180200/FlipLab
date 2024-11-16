@@ -8,10 +8,12 @@ services:
       - key: PORT
         value: 3001
       - key: DB_HOST
-        sync: false
+        value: dpg-clhf0ug2eqrc73f5jbm0-a
       - key: DB_USER
-        sync: false
+        value: flip_lab_user
       - key: DB_PASSWORD
-        sync: false
+        value: 5Gy3Hy9Ue8qqWpKzxRnXPUHFwUKQxqFD
       - key: DB_NAME
-        sync: false
+        value: flip_lab_db
+      - key: DB_PORT
+        value: 5432

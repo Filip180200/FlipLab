@@ -1,18 +1,17 @@
 // Required dependencies
-const mysql = require('mysql');
+const { Pool } = require('pg');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
-// Constants
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
-// Database configuration
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: 'FilipNet',
-    database: 'twitch_comments'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 5432,
 };
 
 // Express app initialization
@@ -23,7 +22,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database connection
-const db = mysql.createConnection(dbConfig);
+const pool = new Pool(dbConfig);
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -35,34 +34,25 @@ const errorHandler = (err, req, res, next) => {
 };
 
 // Database connection handler
-const connectToDatabase = () => {
-    db.connect((err) => {
-        if (err) {
-            console.error('Database connection error:', err.stack);
-            setTimeout(connectToDatabase, 5000); // Retry connection after 5 seconds
-            return;
-        }
-        console.log('Connected to database as ID:', db.threadId);
-    });
-
-    db.on('error', (err) => {
-        console.error('Database error:', err);
-        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-            connectToDatabase();
-        } else {
-            throw err;
-        }
-    });
+const connectToDatabase = async () => {
+    try {
+        await pool.connect();
+        console.log('Connected to PostgreSQL database');
+    } catch (err) {
+        console.error('Database connection error:', err.stack);
+        process.exit(1);
+    }
 };
 
 // Database query helper
-const executeQuery = (query, params) => {
-    return new Promise((resolve, reject) => {
-        db.query(query, params, (err, results) => {
-            if (err) reject(err);
-            resolve(results);
-        });
-    });
+const executeQuery = async (query, params = []) => {
+    try {
+        const result = await pool.query(query, params);
+        return result.rows;
+    } catch (err) {
+        console.error('Query execution error:', err.stack);
+        throw err;
+    }
 };
 
 // Route handlers
@@ -73,8 +63,8 @@ const getComments = async (req, res, next) => {
             FROM comments
             ORDER BY timestamp DESC
         `;
-        const results = await executeQuery(query);
-        res.json(results);
+        const comments = await executeQuery(query);
+        res.json(comments);
     } catch (err) {
         next(err);
     }
@@ -86,17 +76,17 @@ const getLastThreeComments = async (req, res, next) => {
         const query = `
             (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type
             FROM comments
-            WHERE username = ?)
+            WHERE username = $1)
             UNION ALL
             (SELECT id, username, avatar_url, comment, timestamp, 'simulated' as type
             FROM simulated_comments
-            WHERE username = ?)
+            WHERE username = $1)
             ORDER BY timestamp DESC
             LIMIT 3
         `;
         
-        const results = await executeQuery(query, [username, username]);
-        res.json(results);
+        const comments = await executeQuery(query, [username]);
+        res.json(comments);
     } catch (err) {
         next(err);
     }
@@ -110,7 +100,7 @@ const addComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO comments (username, avatar_url, comment) VALUES (?, ?, ?)';
+        const query = 'INSERT INTO comments (username, avatar_url, comment) VALUES ($1, $2, $3)';
         await executeQuery(query, [username, avatar_url, comment]);
         res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
@@ -128,12 +118,12 @@ const getUserData = async (req, res, next) => {
                 UNION
                 SELECT username, avatar_url FROM simulated_comments
             ) combined
-            WHERE username = ?
+            WHERE username = $1
             LIMIT 1
         `;
         
-        const results = await executeQuery(query, [username]);
-        res.json(results[0] || { username });
+        const userData = await executeQuery(query, [username]);
+        res.json(userData[0] || { username });
     } catch (err) {
         next(err);
     }
@@ -148,7 +138,7 @@ const reportUser = async (req, res, next) => {
         }
 
         const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-        const query = 'INSERT INTO reports (reported_username, reporting_username, timestamp) VALUES (?, ?, ?)';
+        const query = 'INSERT INTO reports (reported_username, reporting_username, timestamp) VALUES ($1, $2, $3)';
         
         await executeQuery(query, [reportedUsername, reportingUsername, timestamp]);
         res.status(201).json({ message: 'User reported successfully' });
@@ -164,8 +154,8 @@ const getSimulatedComments = async (req, res, next) => {
             FROM simulated_comments
             ORDER BY timestamp DESC
         `;
-        const results = await executeQuery(query);
-        res.json(results);
+        const comments = await executeQuery(query);
+        res.json(comments);
     } catch (err) {
         next(err);
     }
@@ -179,7 +169,7 @@ const addSimulatedComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO simulated_comments (username, comment, avatar_url, delay) VALUES (?, ?, ?, ?)';
+        const query = 'INSERT INTO simulated_comments (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)';
         await executeQuery(query, [username, comment, avatar_url, delay]);
         res.status(201).json({ message: 'Simulated comment added successfully' });
     } catch (err) {
@@ -189,22 +179,38 @@ const addSimulatedComment = async (req, res, next) => {
 
 // Database initialization
 const initializeDatabase = async () => {
-    const createReportsTable = `
-        CREATE TABLE IF NOT EXISTS reports (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            reported_username VARCHAR(255) NOT NULL,
-            reporting_username VARCHAR(255) NOT NULL,
-            timestamp DATETIME NOT NULL,
-            INDEX (reported_username),
-            INDEX (reporting_username)
-        )
-    `;
-    
     try {
-        await executeQuery(createReportsTable);
-        console.log('Reports table initialized successfully');
+        await executeQuery(`
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url VARCHAR(255),
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await executeQuery(`
+            CREATE TABLE IF NOT EXISTS simulated_comments (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url VARCHAR(255),
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                delay INTEGER
+            )
+        `);
+        await executeQuery(`
+            CREATE TABLE IF NOT EXISTS reports (
+                id SERIAL PRIMARY KEY,
+                reported_username VARCHAR(255) NOT NULL,
+                reporting_username VARCHAR(255) NOT NULL,
+                timestamp TIMESTAMP NOT NULL
+            )
+        `);
+        console.log('Database initialized successfully');
     } catch (err) {
-        console.error('Error initializing reports table:', err);
+        console.error('Database initialization error:', err.stack);
+        process.exit(1);
     }
 };
 
@@ -214,7 +220,6 @@ app.post('/api/comment', addComment);
 app.get('/api/user/:username', getUserData);
 app.get('/api/user/:username/last-comments', getLastThreeComments);
 app.post('/api/report', reportUser);
-app.get('/api/reports', reportUser); // Added the missing report endpoint route
 app.get('/api/simulated_comments', getSimulatedComments);
 app.post('/api/simulated_comment', addSimulatedComment);
 
