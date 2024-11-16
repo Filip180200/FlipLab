@@ -1,20 +1,65 @@
 /* ==========================================================================
    Stream Info & Channel Styles
    ========================================================================== */
-.stream-info {
-    padding: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-    background: #0e0e10;
+.video-container {
     position: relative;
-    z-index: 1;
+    width: 100%;
+    background: #0e0e10;
+}
+
+#player {
+    width: 100%;
+    aspect-ratio: 16/9;
+}
+
+.stream-info {
+    width: 100%;
+    background: #0e0e10;
+}
+
+.stream-header {
+    padding: 15px;
+    width: 100%;
+    display: flex;
+    background: #0e0e10;
+}
+
+.stream-header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    width: 100%;
+}
+
+.stream-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.stream-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.stream-title {
+    color: #efeff1;
+    font-size: 16px;
+    margin: 0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .channel-info {
     display: flex;
-    gap: 16px;
+    align-items: center;
+    gap: 8px;
     opacity: 1;
     transform: none;
     width: auto;
@@ -42,10 +87,9 @@
 }
 
 .channel-name {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #fff;
+    color: #efeff1;
+    font-size: 15px;
+    font-weight: 500;
 }
 
 .channel-game {
@@ -69,61 +113,88 @@
 }
 
 .stream-buttons {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 52px;
+}
+
+.buttons-row {
     display: flex;
     gap: 8px;
-    align-items: center;
-    z-index: 2;
 }
 
-/* Button Styles */
 .follow-btn,
-.subscribe-btn,
-.settings-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: background-color 0.2s;
-}
-
-.follow-btn {
-    background: #3a3a3d;
-    color: white;
-}
-
-.follow-btn:hover {
-    background: #4a4a4d;
-}
-
 .subscribe-btn {
+    padding: 5px 15px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
     background: #9147ff;
     color: white;
+    min-width: 100px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.follow-btn i {
+    font-size: 12px;
+}
+
+.follow-btn.following {
+    background: #3a3a3d;
+}
+
+.follow-btn.following:hover {
+    background: #3a3a3d;
+}
+
+.follow-btn.following i {
+    color: #fb3640;
 }
 
 .subscribe-btn:hover {
     background: #772ce8;
 }
 
-.settings-btn {
-    padding: 8px !important;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #3a3a3d;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
+.viewer-count {
+    color: #adadb8;
+    font-size: 13px;
+    text-align: center;
+    line-height: 18px;
 }
 
-.settings-btn:hover {
-    background: #464649;
+.category-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #adadb8;
+    margin-top: 2px;
+}
+
+.channel-category {
+    color: #bf94ff;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.channel-category:hover {
+    color: #a970ff;
+    text-decoration: underline;
+}
+
+.viewer-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ef233c;
 }
 
 /* Tag Styles */
@@ -138,8 +209,8 @@
 .tag {
     background: #2d2d2d;
     color: #adadb8;
-    padding: 4px 12px;
-    border-radius: 16px;
+    padding: 2px 8px;
+    border-radius: 12px;
     font-size: 12px;
     cursor: pointer;
     transition: background 0.2s ease;
@@ -207,4 +278,21 @@
     font-size: 24px;
     font-weight: bold;
     color: white;
+}
+
+/* Notification Types */
+.notification.success {
+    border-left: 4px solid #00b894;
+}
+
+.notification.success .notification-icon {
+    color: #00b894;
+}
+
+.notification.info {
+    border-left: 4px solid #9147ff;
+}
+
+.notification.info .notification-icon {
+    color: #9147ff;
 }
