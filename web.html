@@ -6,6 +6,22 @@
     <title>FlipLab</title>
     <link rel="stylesheet" href="style.css"> <!-- Link do pliku CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Add styles for timer */
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-left: auto;
+        }
+        .countdown {
+            color: #ff4747;
+            font-weight: bold;
+        }
+        .clock {
+            color: #9147ff;
+        }
+    </style>
 </head>
 <body>
     <!-- Logo and site name -->
@@ -13,6 +29,10 @@
         <div class="logo-container">
             <i class="fas fa-sync-alt logo-icon"></i>
             <span class="site-name">FlipLab</span>
+            <div class="timer-container">
+                <span class="countdown" id="countdown">15:00</span>
+                <span class="clock" id="clock">00:00</span>
+            </div>
         </div>
     </div>
 

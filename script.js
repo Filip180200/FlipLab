@@ -535,6 +535,56 @@ function setupChannelInteractions() {
     });
 }
 
+// Timer functionality
+let sessionTime = 15 * 60; // 15 minutes in seconds
+const countdownElement = document.getElementById('countdown');
+const clockElement = document.getElementById('clock');
+
+// Start countdown timer
+function startCountdown() {
+    const endTime = Date.now() + (sessionTime * 1000);
+    
+    const timer = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
+        
+        if (timeLeft === 0) {
+            clearInterval(timer);
+            window.location.href = '/thank-you.html';
+        }
+        
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+// Update clock
+function updateClock() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    clockElement.textContent = `${hours}:${minutes}`;
+}
+
+// Initialize timers
+document.addEventListener('DOMContentLoaded', () => {
+    startCountdown();
+    updateClock();
+    setInterval(updateClock, 60000); // Update clock every minute
+
+    // Initialize stream stats and buttons first
+    setupStreamButtons();
+    setupControlPanel();
+    updateStreamStats();
+
+    // Handle comment form
+    document.getElementById('commentForm').addEventListener('submit', addComment);
+
+    // Initialize the app
+    initializeApp();
+});
+
 // Inicjalizacja
 async function initializeApp() {
     // Check if user is logged in
@@ -558,16 +608,3 @@ async function initializeApp() {
         onYouTubeIframeAPIReady();
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize stream stats and buttons first
-    setupStreamButtons();
-    setupControlPanel();
-    updateStreamStats();
-
-    // Handle comment form
-    document.getElementById('commentForm').addEventListener('submit', addComment);
-
-    // Initialize the app
-    initializeApp();
-});
