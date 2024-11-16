@@ -6,13 +6,29 @@ const bodyParser = require('body-parser');
 
 const PORT = process.env.PORT || 3001;
 
-const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 5432,
-};
+// Database configuration
+let pool;
+if (process.env.DATABASE_URL) {
+    // Use connection string if available
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    });
+} else {
+    // Fallback to individual credentials
+    pool = new Pool({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        port: process.env.DB_PORT || 5432,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    });
+}
 
 // Express app initialization
 const app = express();
@@ -20,9 +36,6 @@ const app = express();
 // Middleware setup
 app.use(cors());
 app.use(bodyParser.json());
-
-// Database connection
-const pool = new Pool(dbConfig);
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
