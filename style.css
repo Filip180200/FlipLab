@@ -193,6 +193,7 @@ html, body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    height: 93%;
 }
 
 .chat-messages {
@@ -202,6 +203,31 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.site-header {
+    background-color: #181818;
+    padding: 10px 20px;
+    border-bottom: 1px solid #333;
+}
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.logo-icon {
+    font-size: 24px;
+    color: #9147ff;
+    animation: spin 2s linear infinite;
+}
+.site-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 #commentForm {
