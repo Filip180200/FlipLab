@@ -1,5 +1,5 @@
 // Konfiguracja
-const API_URL = 'http://localhost:3001';
+const API_URL = 'https://fliplab.onrender.com';
 const DEFAULT_AVATAR = 'https://static-cdn.jtvnw.net/user-default-pictures-uv/13e5fa74-defa-11e9-809c-784f43822e80-profile_image-70x70.png';
 const VIDEO_ID = 'jfKfPfyJRdk'; // lofi girl video ID
 
