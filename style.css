@@ -18,6 +18,12 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+body {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+}
+
 /* ==========================================================================
    Layout & Container Styles
    ========================================================================== */
@@ -507,6 +513,31 @@ button:hover {
 
 .reported-message .username {
     color: #808080 !important;
+}
+
+/* ==========================================================================
+   Tag Styles
+   ========================================================================== */
+.stream-tags {
+    padding: 0 16px 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: #0e0e10;
+}
+
+.tag {
+    background: #2d2d2d;
+    color: #adadb8;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.tag:hover {
+    background: #3d3d3d;
 }
 
 /* ==========================================================================
