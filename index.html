@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Comments</title>
+    <link rel="stylesheet" href="style.css"> <!-- Link do pliku CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Formularz do podania nicku -->
+    <div id="nicknamePrompt" style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #181818; color: white;">
+        <form id="nicknameForm">
+            <label for="nickname">Podaj swój nick:</label>
+            <input type="text" id="nickname" placeholder="Twój nick" required>
+            <button type="submit">Potwierdź</button>
+        </form>
+    </div>
+
+    <!-- Zawartość strony (wideo i komentarze) -->
+    <div id="mainContent" style="display: none;">
+        <div class="content-wrapper">
+            <div class="channels-sidebar">
+                <div class="sidebar-header">
+                    <h3>Recommended Channels</h3>
+                </div>
+                <div class="channel-list">
+                    <div class="channel-item active">
+                        <div class="channel-preview">
+                            <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/5a72c3d9-424a-40a6-bf23-73370cd85578-profile_image-70x70.png" alt="Channel Avatar">
+                            <span class="viewer-count">12.8K</span>
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-details">
+                                <h4>ChilledCow</h4>
+                                <p>Lo-Fi Beats</p>
+                                <span class="tags">Music • Chill</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="channel-item">
+                        <div class="channel-preview">
+                            <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/7ed5e0c6-0191-4eef-8328-4af6e4ea5318-profile_image-70x70.png" alt="Channel Avatar">
+                            <span class="viewer-count">25.4K</span>
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-details">
+                                <h4>pokimane</h4>
+                                <p>Just Chatting</p>
+                                <span class="tags">IRL • English</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="channel-item">
+                        <div class="channel-preview">
+                            <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/f040f0d4-8b30-4215-bd9e-06a2c3977a8c-profile_image-70x70.png" alt="Channel Avatar">
+                            <span class="viewer-count">89.2K</span>
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-details">
+                                <h4>Faker</h4>
+                                <p>League of Legends</p>
+                                <span class="tags">Gaming • Esports</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="channel-item">
+                        <div class="channel-preview">
+                            <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/32805a78-d927-48bd-8089-bf5efed53ea4-profile_image-70x70.png" alt="Channel Avatar">
+                            <span class="viewer-count">45.6K</span>
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-details">
+                                <h4>Dream</h4>
+                                <p>Minecraft</p>
+                                <span class="tags">Gaming • Speedrun</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="main-content">
+                <div class="video-section">
+                    <div class="video-container">
+                        <div id="player"></div>
+                        <div class="stream-info">
+                            <div class="channel-info">
+                                <div class="channel-avatar">
+                                    <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/cd921fcd-53fc-4b1d-be23-0787bc36b756-profile_image-70x70.png" alt="Channel Avatar">
+                                </div>
+                                <div class="channel-details">
+                                    <h2 class="channel-name">Lofi Girl</h2>
+                                    <p class="channel-game">Music</p>
+                                    <div class="stream-stats">
+                                        <span class="viewers"><i class="fas fa-user"></i> 32.5K viewers</span>
+                                        <span class="uptime"><i class="fas fa-clock"></i> 4:20:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stream-buttons">
+                                <button class="follow-btn"><i class="fas fa-heart"></i> Follow</button>
+                                <button class="subscribe-btn"><i class="fas fa-star"></i> Subscribe</button>
+                                <button class="settings-btn" onclick="toggleControlPanel()"><i class="fas fa-cog"></i></button>
+                            </div>
+                        </div>
+                        <div class="stream-tags">
+                            <span class="tag">Music</span>
+                            <span class="tag">Lofi</span>
+                            <span class="tag">Study</span>
+                            <span class="tag">Chill</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-section">
+                    <div id="comments"></div>
+                    <form id="commentForm">
+                        <input type="text" id="comment" placeholder="Napisz komentarz..." required>
+                        <button type="submit">Wyślij</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div id="controlPanel" class="control-panel">
+            <div class="control-header">
+                <h3>Stream Controls</h3>
+                <button onclick="toggleControlPanel()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="control-section">
+                <h4>Viewers</h4>
+                <div class="control-group">
+                    <input type="range" id="viewerSlider" min="0" max="1000000" step="100" value="32500">
+                    <span id="viewerCount">32.5K</span>
+                </div>
+            </div>
+            <div class="control-section">
+                <h4>Stream Time</h4>
+                <div class="control-group">
+                    <button onclick="adjustTime(-3600)">-1h</button>
+                    <button onclick="adjustTime(-60)">-1m</button>
+                    <button onclick="resetTime()">Reset</button>
+                    <button onclick="adjustTime(60)">+1m</button>
+                    <button onclick="adjustTime(3600)">+1h</button>
+                </div>
+            </div>
+            <div class="control-section">
+                <h4>Interaction Stats</h4>
+                <div class="stat-group">
+                    <label>Followers: <span id="followerCount">12.5K</span></label>
+                    <input type="range" id="followerSlider" min="0" max="100000" step="100" value="12500">
+                </div>
+                <div class="stat-group">
+                    <label>Subscribers: <span id="subCount">2.3K</span></label>
+                    <input type="range" id="subSlider" min="0" max="50000" step="100" value="2300">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do zgłaszania użytkownika -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <div class="report-header">
+                <img id="reportAvatar" class="report-avatar" alt="User avatar">
+                <h2 id="reportUsername"></h2>
+            </div>
+            <div class="recent-comments">
+                <h3>Ostatnie komentarze:</h3>
+                <div id="reportUserComments" class="comments-list"></div>
+            </div>
+            <p>Czy na pewno chcesz zgłosić tego użytkownika?</p>
+            <div class="modal-buttons">
+                <button id="reportButton" onclick="reportUser(document.getElementById('reportUsername').innerText.replace('Zgłoś użytkownika: ', ''))">Zgłoś</button>
+                <button onclick="closeReportModal()">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+</body>
+</html>
