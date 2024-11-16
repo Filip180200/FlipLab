@@ -1,0 +1,135 @@
+/* ==========================================================================
+   Channels Sidebar Styles
+   ========================================================================== */
+.channels-sidebar {
+    width: 60px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    position: relative;
+    z-index: 100;
+}
+
+.channels-sidebar:hover {
+    width: 340px;
+}
+
+.sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #2d2d2d;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.channels-sidebar:hover .sidebar-header h3 {
+    opacity: 1;
+}
+
+.channel-list {
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.channel-item {
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.channel-item:hover {
+    transform: translateX(4px);
+}
+
+.channel-preview {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.channel-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.channel-info {
+    display: flex;
+    gap: 12px;
+    padding: 0 4px;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;
+}
+
+.channels-sidebar:hover .channel-info {
+    opacity: 1;
+    transform: translateX(0);
+    width: auto;
+    margin-left: 12px;
+}
+
+.viewer-count {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.channels-sidebar:hover .viewer-count {
+    opacity: 1;
+}
+
+.channel-info .channel-details {
+    overflow: hidden;
+}
+
+.channel-info h4 {
+    margin: 0 0 2px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.channel-info p {
+    margin: 0 0 2px;
+    color: #adadb8;
+    font-size: 13px;
+}
+
+.channel-info .tags {
+    color: #adadb8;
+    font-size: 12px;
+}
