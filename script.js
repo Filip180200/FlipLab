@@ -256,7 +256,7 @@ async function openReportModal(username) {
 }
 
 async function reportUser(username) {
-    const reportingUsername = localStorage.getItem('nickname');
+    const reportingUsername = localStorage.getItem('username');
     if (!reportingUsername) {
         showNotification('Error: You must be logged in to report users');
         return;
@@ -301,7 +301,7 @@ async function addComment(event) {
     
     const commentInput = document.getElementById('comment');
     const comment = commentInput.value.trim();
-    const nickname = localStorage.getItem('nickname');
+    const nickname = localStorage.getItem('username');
     
     if (!comment) return;
     
@@ -537,25 +537,25 @@ function setupChannelInteractions() {
 
 // Inicjalizacja
 async function initializeApp() {
-    // Check if nickname exists
-    const savedNickname = localStorage.getItem('nickname');
-    if (savedNickname) {
-        // Load main content first
-        document.getElementById('mainContent').style.display = 'block';
-        await loadComments(true);  // Initial load with true flag
-        
-        // Hide nickname prompt after content is loaded
-        document.getElementById('nicknamePrompt').style.display = 'none';
-        
-        // Initialize YouTube player
-        if (!window.YT) {
-            const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api';
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        } else {
-            onYouTubeIframeAPIReady();
-        }
+    // Check if user is logged in
+    const username = localStorage.getItem('username');
+    if (!username) {
+        // Redirect to login page if not logged in
+        window.location.href = '/index.html';
+        return;
+    }
+
+    // Load main content
+    await loadComments(true);  // Initial load with true flag
+    
+    // Initialize YouTube player
+    if (!window.YT) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    } else {
+        onYouTubeIframeAPIReady();
     }
 }
 
@@ -565,38 +565,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupControlPanel();
     updateStreamStats();
 
-    // Handle nickname form
-    document.getElementById('nicknameForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const nickname = document.getElementById('nickname').value;
-        
-        if (nickname.trim()) {
-            localStorage.setItem('nickname', nickname);
-            
-            // Load main content
-            document.getElementById('mainContent').style.display = 'block';
-            await loadComments(true);  // Initial load with true flag
-            
-            // Hide nickname prompt after content is loaded
-            document.getElementById('nicknamePrompt').style.display = 'none';
-            
-            // Initialize YouTube player after showing main content
-            if (!window.YT) {
-                const tag = document.createElement('script');
-                tag.src = 'https://www.youtube.com/iframe_api';
-                const firstScriptTag = document.getElementsByTagName('script')[0];
-                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-            } else {
-                onYouTubeIframeAPIReady();
-            }
-        }
-    });
-
     // Handle comment form
     document.getElementById('commentForm').addEventListener('submit', addComment);
-
-    // Refresh comments periodically (without clearing)
-    //setInterval(() => loadComments(false), 5000);
 
     // Initialize the app
     initializeApp();
