@@ -73,12 +73,29 @@ const executeQuery = async (query, params = []) => {
 // Route handlers
 const getComments = async (req, res, next) => {
     try {
+        // Only get simulated comments
         const query = `
-            SELECT id, username, avatar_url, comment, timestamp
-            FROM comments
+            SELECT id, username, avatar_url, comment, timestamp, delay
+            FROM simulated_comments
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query);
+        res.json(comments);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const getNewComments = async (req, res, next) => {
+    try {
+        const { lastTimestamp } = req.query;
+        const query = `
+            SELECT id, username, avatar_url, comment, timestamp
+            FROM comments
+            WHERE timestamp > $1
+            ORDER BY timestamp DESC
+        `;
+        const comments = await executeQuery(query, [lastTimestamp || new Date().toISOString()]);
         res.json(comments);
     } catch (err) {
         next(err);
@@ -231,6 +248,7 @@ const initializeDatabase = async () => {
 
 // Routes
 app.get('/api/comments', getComments);
+app.get('/api/new-comments', getNewComments);
 app.post('/api/comment', addComment);
 app.get('/api/user/:username', getUserData);
 app.get('/api/user/:username/last-comments', getLastThreeComments);
