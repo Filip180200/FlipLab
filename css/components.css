@@ -33,9 +33,10 @@
 }
 
 .stream-avatar {
-    width: 64px;
-    height: 64px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
+    object-fit: cover;
     flex-shrink: 0;
 }
 
@@ -69,9 +70,10 @@
 }
 
 .channel-avatar {
-    width: 64px;
-    height: 64px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
+    object-fit: cover;
     overflow: hidden;
     flex-shrink: 0;
 }
@@ -162,23 +164,36 @@
 }
 
 .follow-btn,
-.subscribe-btn,
-.viewer-count {
-    padding: 5px 15px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    background: #9147ff;
-    color: white;
-    width: 120px;
-    height: 30px;
+.subscribe-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
+    gap: 8px;
+    padding: 0 10px;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
     transition: all 0.2s ease;
+}
+
+.follow-btn {
+    background: #9147ff;
+    color: white;
+}
+
+.follow-btn:hover {
+    background: #772ce8;
+}
+
+.subscribe-btn {
+    background: #2d2d2d;
+    color: white;
+}
+
+.subscribe-btn:hover {
+    background: #3d3d3d;
 }
 
 .viewer-count {
@@ -198,11 +213,6 @@
 .viewer-count i {
     color: #adadb8;
     font-size: 11px;
-}
-
-.follow-btn:hover,
-.subscribe-btn:hover {
-    background: #772ce8;
 }
 
 .follow-btn.following {
@@ -422,6 +432,7 @@
 
 /* Report Preview Styles */
 .report-preview {
+    display: none;
     position: fixed;
     top: 50%;
     left: 50%;
@@ -429,6 +440,7 @@
     width: 300px;
     background: #18181b;
     border: 1px solid #2d2d2d;
+    border-radius: 4px;
     z-index: 9999;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
@@ -444,16 +456,12 @@
     display: none;
 }
 
-.report-preview[style*="display: block"] + .report-overlay {
+.report-preview[style*="display: block"] {
     display: block;
 }
 
-.report-preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid #2d2d2d;
+.report-preview[style*="display: block"] + .report-overlay {
+    display: block;
 }
 
 .user-info {
@@ -461,12 +469,14 @@
     gap: 12px;
     padding: 12px;
     border-bottom: 1px solid #2d2d2d;
+    align-items: center;
 }
 
 .user-info img {
     width: 40px;
     height: 40px;
     border-radius: 50%;
+    object-fit: cover;
 }
 
 .user-details {
@@ -503,40 +513,35 @@
 
 .recent-messages {
     padding: 12px;
-    border-bottom: 1px solid #2d2d2d;
 }
 
 .recent-messages h3 {
     color: #efeff1;
     font-size: 14px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #2d2d2d;
+    margin-bottom: 8px;
 }
 
-.recent-messages .message {
+.message {
     color: #adadb8;
     font-size: 13px;
-    margin-bottom: 4px;
-    line-height: 1.4;
+    padding: 4px 0;
 }
 
 .report-actions {
     padding: 12px;
     display: flex;
     justify-content: flex-end;
+    border-top: 1px solid #2d2d2d;
 }
 
 .report-submit {
-    padding: 5px 15px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
     background: #9147ff;
     color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
 }
 
 .report-submit:hover {
