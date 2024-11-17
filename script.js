@@ -312,12 +312,11 @@ async function openReportModal(username) {
         });
         
         const reportModal = document.getElementById('reportModal');
-        const reportPreview = reportModal.querySelector('.report-preview');
-        const previewUsername = reportPreview.querySelector('.preview-username');
-        const avatar = reportPreview.querySelector('.user-avatar');
+        const reportUsername = document.getElementById('reportUsername');
+        const avatar = reportModal.querySelector('.chat-avatar');
         const commentsList = document.getElementById('reportUserComments');
         
-        previewUsername.textContent = username;
+        reportUsername.textContent = username;
         avatar.src = userAvatar;
         avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
@@ -340,8 +339,8 @@ async function openReportModal(username) {
         }
         
         // Setup event handlers
-        const closeButton = reportPreview.querySelector('.close-preview');
-        const submitButton = reportPreview.querySelector('.report-submit');
+        const closeButton = reportModal.querySelector('.close-preview');
+        const submitButton = reportModal.querySelector('.report-submit');
         
         closeButton.onclick = closeReportModal;
         submitButton.onclick = () => {
