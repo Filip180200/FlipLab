@@ -362,18 +362,43 @@ function closeReportModal() {
     reportModal.style.display = 'none';
 }
 
-function reportUser(username) {
-    showNotification(`User ${username} has been reported`, 'info');
-    reportedUsers.add(username);
-    
-    // Mark user's messages as reported
-    const userMessages = document.querySelectorAll('.chat-message');
-    userMessages.forEach(message => {
-        const messageUsername = message.querySelector('.username').textContent;
-        if (messageUsername === username) {
-            message.classList.add('reported-message');
+async function reportUser(username) {
+    try {
+        // Get the current user (you might want to replace this with actual logged-in user)
+        const reportingUsername = "Current User";
+        
+        // Send report to server
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reportedUsername: username,
+                reportingUsername: reportingUsername
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit report');
         }
-    });
+
+        // Show success notification
+        showNotification(`User ${username} has been reported`, 'success');
+        
+        // Mark user's messages as reported
+        const userMessages = document.querySelectorAll('.chat-message');
+        userMessages.forEach(message => {
+            const messageUsername = message.querySelector('.username').textContent;
+            if (messageUsername === username) {
+                message.classList.add('reported-message');
+            }
+        });
+
+    } catch (error) {
+        console.error('Error reporting user:', error);
+        showNotification('Failed to report user', 'error');
+    }
 }
 
 // Funkcje komentarzy użytkownika

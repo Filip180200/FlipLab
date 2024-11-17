@@ -124,63 +124,52 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 300px;
-    background: #18181b;
-    border: 1px solid #2d2d2d;
-    border-radius: 4px;
-    z-index: 9999;
+    background-color: #1f1f23;
+    border-radius: 8px;
+    padding: 20px;
+    width: 400px;
+    max-width: 90%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    color: #efeff1;
+    z-index: 100002; /* Much higher than overlay */
 }
 
 .report-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 9998;
-    display: none;
+    z-index: 100001;
 }
 
-.report-preview[style*="display: block"] {
-    display: block;
-}
-
-.report-preview[style*="display: block"] + .report-overlay {
-    display: block;
-}
-
-.user-info {
+.report-header {
     display: flex;
-    gap: 12px;
-    padding: 12px;
-    border-bottom: 1px solid #2d2d2d;
     align-items: center;
-}
-
-.user-info img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.user-details {
-    flex-grow: 1;
-}
-
-.user-header {
-    display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 8px;
+    margin-bottom: 20px;
 }
 
-.preview-username {
+.report-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.report-username {
+    font-weight: bold;
     color: #efeff1;
-    font-weight: 500;
-    font-size: 14px;
+}
+
+.report-comments {
+    background: #18181b;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 12px 0;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .close-preview {
@@ -188,37 +177,24 @@
     border: none;
     color: #adadb8;
     cursor: pointer;
-    padding: 4px;
+    padding: 8px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 100003;
 }
 
 .close-preview:hover {
     color: #efeff1;
-}
-
-.recent-messages {
-    padding: 12px;
-}
-
-.recent-messages h3 {
-    color: #efeff1;
-    font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.message {
-    color: #adadb8;
-    font-size: 13px;
-    padding: 4px 0;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .report-actions {
-    padding: 12px;
     display: flex;
     justify-content: flex-end;
-    border-top: 1px solid #2d2d2d;
+    margin-top: 20px;
 }
 
 .report-submit {
@@ -228,11 +204,23 @@
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    z-index: 100003;
 }
 
 .report-submit:hover {
     background: #772ce8;
+}
+
+/* Make sure all modal elements are clickable */
+.report-preview *,
+.report-header,
+.report-user-info,
+.report-comments,
+.report-actions {
+    pointer-events: auto !important;
+    z-index: 100003;
 }
 
 @keyframes fadeIn {
