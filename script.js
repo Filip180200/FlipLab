@@ -311,7 +311,8 @@ async function openReportModal(username) {
             }
         });
         
-        const reportPreview = document.querySelector('.report-preview');
+        const reportModal = document.getElementById('reportModal');
+        const reportPreview = reportModal.querySelector('.report-preview');
         const previewUsername = reportPreview.querySelector('.preview-username');
         const avatar = reportPreview.querySelector('.user-avatar');
         const commentsList = document.getElementById('reportUserComments');
@@ -338,7 +339,17 @@ async function openReportModal(username) {
             commentsList.appendChild(noCommentsDiv);
         }
         
-        reportPreview.style.display = 'block';
+        // Setup event handlers
+        const closeButton = reportPreview.querySelector('.close-preview');
+        const submitButton = reportPreview.querySelector('.report-submit');
+        
+        closeButton.onclick = closeReportModal;
+        submitButton.onclick = () => {
+            reportUser(username);
+            closeReportModal();
+        };
+        
+        reportModal.style.display = 'block';
     } catch (error) {
         console.error('Error loading user data:', error);
         showNotification('Error loading user data', 'error');
@@ -346,44 +357,12 @@ async function openReportModal(username) {
 }
 
 function closeReportModal() {
-    const reportPreview = document.querySelector('.report-preview');
-    reportPreview.style.display = 'none';
+    const reportModal = document.getElementById('reportModal');
+    reportModal.style.display = 'none';
 }
 
-async function reportUser(username) {
-    const reportingUsername = localStorage.getItem('username');
-    if (!reportingUsername) {
-        showNotification('Error: You must be logged in to report users');
-        return;
-    }
-
-    try {
-        await postData('/api/report', {
-            reportedUsername: username,
-            reportingUsername,
-            timestamp: new Date().toISOString()
-        });
-        
-        // Add user to reported set and update their messages
-        reportedUsers.add(username);
-        updateReportedUserMessages(username);
-        
-        showNotification(`User ${username} has been reported`);
-        closeReportModal();
-    } catch (error) {
-        console.error('Error reporting user:', error);
-        showNotification('Failed to report user. Please try again.');
-    }
-}
-
-function updateReportedUserMessages(username) {
-    const messages = document.querySelectorAll('.message');
-    messages.forEach(message => {
-        const usernameSpan = message.querySelector('.username');
-        if (usernameSpan && usernameSpan.textContent === username) {
-            message.classList.add('reported-message');
-        }
-    });
+function reportUser(username) {
+    showNotification(`User ${username} has been reported`, 'info');
 }
 
 // Funkcje komentarzy użytkownika

@@ -155,8 +155,6 @@
     flex-direction: column;
     gap: 4px;
     align-items: flex-end;
-    position: relative;
-    z-index: 1;
 }
 
 .buttons-row {
@@ -178,8 +176,6 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    position: relative;
-    z-index: 2;
 }
 
 .follow-btn {
@@ -555,87 +551,4 @@
 .chat-section {
     position: relative;
     z-index: 2;
-}
-
-.control-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #18181b;
-    border: 1px solid #2d2d2d;
-    border-radius: 4px;
-    padding: 16px;
-    width: 300px;
-    z-index: 9999;
-    display: none;
-}
-
-.control-panel.visible {
-    display: block;
-}
-
-.control-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.control-header h3 {
-    color: #efeff1;
-    margin: 0;
-    font-size: 16px;
-}
-
-.control-header button {
-    background: none;
-    border: none;
-    color: #adadb8;
-    cursor: pointer;
-    padding: 4px;
-}
-
-.control-section {
-    margin-bottom: 16px;
-}
-
-.control-section h4 {
-    color: #efeff1;
-    margin: 0 0 8px 0;
-    font-size: 14px;
-}
-
-.control-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.control-group button {
-    background: #2d2d2d;
-    border: none;
-    color: #efeff1;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.control-group button:hover {
-    background: #3d3d3d;
-}
-
-.stat-group {
-    margin-bottom: 8px;
-}
-
-.stat-group label {
-    color: #efeff1;
-    display: block;
-    margin-bottom: 4px;
-    font-size: 14px;
-}
-
-.stat-group input[type="range"] {
-    width: 100%;
 }
