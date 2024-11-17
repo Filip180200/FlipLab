@@ -5,6 +5,7 @@
     position: relative;
     width: 100%;
     background: #0e0e10;
+    z-index: 2;
 }
 
 #player {
@@ -102,6 +103,8 @@
     display: flex;
     gap: 16px;
     margin-top: 8px;
+    padding: 12px;
+    border-top: 1px solid #2d2d2d;
 }
 
 .stream-stats span {
@@ -112,22 +115,55 @@
     gap: 6px;
 }
 
+.stream-viewers {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff8080;
+    font-size: 15px;
+    padding: 5px 0;
+    height: 30px;
+    width: 248px;
+    justify-content: flex-end;
+}
+
+.stream-viewers i {
+    color: #ff8080;
+    font-size: 16px;
+    order: 1;
+}
+
+.viewer-label {
+    color: #ff8080;
+    font-weight: 500;
+    font-size: 14px;
+    order: 2;
+}
+
+.viewer-number {
+    font-weight: 600;
+    order: 3;
+    font-size: 16px;
+}
+
 .stream-buttons {
     margin-left: auto;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    height: 52px;
+    align-items: flex-end;
 }
 
 .buttons-row {
     display: flex;
     gap: 8px;
+    align-items: center;
 }
 
 .follow-btn,
-.subscribe-btn {
+.subscribe-btn,
+.viewer-count {
     padding: 5px 15px;
     font-size: 13px;
     font-weight: 600;
@@ -136,39 +172,65 @@
     cursor: pointer;
     background: #9147ff;
     color: white;
-    min-width: 100px;
+    width: 120px;
     height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    transition: all 0.2s ease;
 }
 
-.follow-btn i {
+.viewer-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: #2d2d2d;
+    border-radius: 4px;
+    height: 24px;
     font-size: 12px;
+    cursor: default;
+    width: fit-content;
+    min-width: 60px;
 }
 
-.follow-btn.following {
-    background: #3a3a3d;
+.viewer-count i {
+    color: #adadb8;
+    font-size: 11px;
 }
 
-.follow-btn.following:hover {
-    background: #3a3a3d;
-}
-
-.follow-btn.following i {
-    color: #fb3640;
-}
-
+.follow-btn:hover,
 .subscribe-btn:hover {
     background: #772ce8;
 }
 
-.viewer-count {
-    color: #adadb8;
-    font-size: 13px;
-    text-align: center;
-    line-height: 18px;
+.follow-btn.following {
+    background: #3a3a3d !important;
+}
+
+.follow-btn.following:hover {
+    background: #464649 !important;
+}
+
+.follow-btn.following i {
+    transform: scale(-1, 1);
+}
+
+.subscribe-btn i {
+    font-size: 14px;
+}
+
+.subscribe-btn.subscribed {
+    background: #3a3a3d;
+}
+
+.subscribe-btn.subscribed i {
+    color: #ffd700;
+}
+
+.subscribe-btn.subscribed:hover {
+    background: #464649;
 }
 
 .category-section {
@@ -295,4 +357,193 @@
 
 .notification.info .notification-icon {
     color: #9147ff;
+}
+
+/* Chat Message Styles */
+.chat-message {
+    padding: 8px;
+    position: relative;
+}
+
+.chat-message:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.username {
+    color: #efeff1;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+}
+
+.username:hover {
+    color: #bf94ff;
+}
+
+.message-actions {
+    display: none;
+    margin-left: auto;
+}
+
+.chat-message:hover .message-actions {
+    display: flex;
+}
+
+.report-btn {
+    background: none;
+    border: none;
+    color: #adadb8;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-btn:hover {
+    color: #efeff1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.message-content {
+    color: #efeff1;
+    font-size: 13px;
+    word-wrap: break-word;
+}
+
+/* Report Preview Styles */
+.report-preview {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background: #18181b;
+    border: 1px solid #2d2d2d;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.report-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    display: none;
+}
+
+.report-preview[style*="display: block"] + .report-overlay {
+    display: block;
+}
+
+.report-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.user-info {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.user-details {
+    flex-grow: 1;
+}
+
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-username {
+    color: #efeff1;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.close-preview {
+    background: none;
+    border: none;
+    color: #adadb8;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-preview:hover {
+    color: #efeff1;
+}
+
+.recent-messages {
+    padding: 12px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.recent-messages h3 {
+    color: #efeff1;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.recent-messages .message {
+    color: #adadb8;
+    font-size: 13px;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.report-actions {
+    padding: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.report-submit {
+    padding: 5px 15px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background: #9147ff;
+    color: white;
+}
+
+.report-submit:hover {
+    background: #772ce8;
+}
+
+.chat-section {
+    position: relative;
+    z-index: 2;
 }
