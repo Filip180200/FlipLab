@@ -170,24 +170,25 @@
     </div>
 
     <!-- Report Modal -->
-    <div id="reportModal" class="modal">
-        <div class="modal-content">
-            <div class="report-preview">
-                <div class="message-header">
-                    <img src="" class="chat-avatar" alt="User avatar">
-                    <span class="username" id="reportUsername"></span>
+    <div id="reportModal" class="report-preview">
+        <div class="user-info">
+            <img src="" class="chat-avatar" alt="User avatar">
+            <div class="user-details">
+                <div class="user-header">
+                    <span class="preview-username" id="reportUsername"></span>
                     <button class="close-preview"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="recent-messages">
-                    <h3>Last Comments:</h3>
-                    <div id="reportUserComments"></div>
-                </div>
-                <div class="report-actions">
-                    <button class="report-submit">Zgłoś</button>
                 </div>
             </div>
         </div>
+        <div class="recent-messages">
+            <h3>Recent Comments</h3>
+            <div id="reportUserComments"></div>
+        </div>
+        <div class="report-actions">
+            <button class="report-submit">Report User</button>
+        </div>
     </div>
+    <div class="report-overlay"></div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>

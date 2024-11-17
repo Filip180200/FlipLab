@@ -341,12 +341,14 @@ async function openReportModal(username) {
         // Setup event handlers
         const closeButton = reportModal.querySelector('.close-preview');
         const submitButton = reportModal.querySelector('.report-submit');
+        const overlay = document.querySelector('.report-overlay');
         
         closeButton.onclick = closeReportModal;
         submitButton.onclick = () => {
             reportUser(username);
             closeReportModal();
         };
+        overlay.onclick = closeReportModal;
         
         reportModal.style.display = 'block';
     } catch (error) {
@@ -362,6 +364,16 @@ function closeReportModal() {
 
 function reportUser(username) {
     showNotification(`User ${username} has been reported`, 'info');
+    reportedUsers.add(username);
+    
+    // Mark user's messages as reported
+    const userMessages = document.querySelectorAll('.chat-message');
+    userMessages.forEach(message => {
+        const messageUsername = message.querySelector('.username').textContent;
+        if (messageUsername === username) {
+            message.classList.add('reported-message');
+        }
+    });
 }
 
 // Funkcje komentarzy użytkownika
