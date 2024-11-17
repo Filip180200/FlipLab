@@ -38,6 +38,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, './')));
+app.use('/css', express.static(path.join(__dirname, 'css')));
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
