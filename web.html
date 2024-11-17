@@ -132,43 +132,6 @@
             </div>
         </div>
 
-        <!-- Control Panel -->
-        <div id="controlPanel" class="control-panel">
-            <div class="control-header">
-                <h3>Stream Controls</h3>
-                <button onclick="toggleControlPanel()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="control-section">
-                <h4>Viewers</h4>
-                <div class="control-group">
-                    <input type="range" id="viewerSlider" min="0" max="1000000" step="100" value="32500">
-                    <span id="viewerCount">32.5K</span>
-                </div>
-            </div>
-            <div class="control-section">
-                <h4>Stream Time</h4>
-                <div class="control-group">
-                    <button onclick="adjustTime(-3600)">-1h</button>
-                    <button onclick="adjustTime(-60)">-1m</button>
-                    <button onclick="resetTime()">Reset</button>
-                    <button onclick="adjustTime(60)">+1m</button>
-                    <button onclick="adjustTime(3600)">+1h</button>
-                </div>
-            </div>
-            <div class="control-section">
-                <h4>Interaction Stats</h4>
-                <div class="stat-group">
-                    <label>Followers: <span id="followerCount">12.5K</span></label>
-                    <input type="range" id="followerSlider" min="0" max="100000" step="100" value="12500">
-                </div>
-                <div class="stat-group">
-                    <label>Subscribers: <span id="subCount">2.3K</span></label>
-                    <input type="range" id="subSlider" min="0" max="50000" step="100" value="2300">
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Report Modal -->
     <div id="reportModal" class="modal">
         <div class="modal-content">

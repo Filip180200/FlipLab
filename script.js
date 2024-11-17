@@ -287,9 +287,29 @@ function createTextContainer(comment) {
 // Funkcje raportu użytkownika
 async function openReportModal(username) {
     try {
-        // For testing, use mock data
-        const userData = { avatar_url: DEFAULT_AVATAR };
-        const userComments = mockUserComments[username] || [];
+        // Get the user's avatar from their comments
+        const userComments = document.querySelectorAll('.chat-message');
+        let userAvatar = DEFAULT_AVATAR;
+        let recentComments = [];
+        
+        // Collect comments and avatar for the user
+        userComments.forEach(commentEl => {
+            const commentUsername = commentEl.querySelector('.username').textContent;
+            if (commentUsername === username) {
+                // Get avatar if we haven't found it yet
+                if (userAvatar === DEFAULT_AVATAR) {
+                    const avatarImg = commentEl.querySelector('.chat-avatar');
+                    userAvatar = avatarImg ? avatarImg.src : DEFAULT_AVATAR;
+                }
+                
+                // Get comment text
+                const commentText = commentEl.querySelector('.message-content').textContent;
+                recentComments.push({
+                    comment: commentText,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
         
         const reportPreview = document.querySelector('.report-preview');
         const previewUsername = reportPreview.querySelector('.preview-username');
@@ -297,17 +317,15 @@ async function openReportModal(username) {
         const commentsList = document.getElementById('reportUserComments');
         
         previewUsername.textContent = username;
-        avatar.src = userData.avatar_url || DEFAULT_AVATAR;
+        avatar.src = userAvatar;
         avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
         // Clear previous comments
         commentsList.innerHTML = '';
         
         // Add recent comments in reverse chronological order
-        if (userComments && userComments.length > 0) {
-            userComments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                       .slice(0, 3) // Get last 3 comments
-                       .forEach(comment => {
+        if (recentComments.length > 0) {
+            recentComments.slice(-3).forEach(comment => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = 'message';
                 messageDiv.textContent = comment.comment;
