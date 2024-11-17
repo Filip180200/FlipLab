@@ -173,10 +173,14 @@
     <div id="reportModal" class="modal">
         <div class="modal-content">
             <div class="report-preview">
-                <div class="message-header">
-                    <img src="" class="chat-avatar" alt="User avatar">
-                    <span class="username" id="reportUsername"></span>
-                    <button class="close-preview"><i class="fas fa-times"></i></button>
+                <div class="user-info">
+                    <img src="" class="user-avatar" alt="User avatar">
+                    <div class="user-details">
+                        <div class="user-header">
+                            <span class="preview-username"></span>
+                            <button class="close-preview"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
                 </div>
                 <div class="recent-messages">
                     <h3>Last Comments:</h3>
@@ -186,6 +190,7 @@
                     <button class="report-submit">Zgłoś</button>
                 </div>
             </div>
+            <div class="report-overlay"></div>
         </div>
     </div>
 

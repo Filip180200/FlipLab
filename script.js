@@ -25,6 +25,15 @@ const userCommentsCache = new Map();
 // Set to store reported users
 const reportedUsers = new Set();
 
+// Mock data for testing
+const mockUserComments = {
+    'User123': [
+        { comment: 'Hello everyone!', timestamp: new Date().toISOString() },
+        { comment: 'This stream is amazing!', timestamp: new Date(Date.now() - 5000).toISOString() },
+        { comment: "Can't wait for the next one!", timestamp: new Date(Date.now() - 10000).toISOString() }
+    ]
+};
+
 function addCommentToCache(username, comment) {
     if (!userCommentsCache.has(username)) {
         userCommentsCache.set(username, []);
@@ -278,15 +287,16 @@ function createTextContainer(comment) {
 // Funkcje raportu użytkownika
 async function openReportModal(username) {
     try {
-        const userData = await fetchData(`/api/user/${username}`);
-        const userComments = await fetchData(`/api/user/${username}/last-comments`);
+        // For testing, use mock data
+        const userData = { avatar_url: DEFAULT_AVATAR };
+        const userComments = mockUserComments[username] || [];
         
-        const reportModal = document.getElementById('reportModal');
-        const reportUsername = document.getElementById('reportUsername');
-        const avatar = reportModal.querySelector('.chat-avatar');
+        const reportPreview = document.querySelector('.report-preview');
+        const previewUsername = reportPreview.querySelector('.preview-username');
+        const avatar = reportPreview.querySelector('.user-avatar');
         const commentsList = document.getElementById('reportUserComments');
         
-        reportUsername.textContent = username;
+        previewUsername.textContent = username;
         avatar.src = userData.avatar_url || DEFAULT_AVATAR;
         avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
@@ -310,11 +320,16 @@ async function openReportModal(username) {
             commentsList.appendChild(noCommentsDiv);
         }
         
-        reportModal.style.display = 'block';
+        reportPreview.style.display = 'block';
     } catch (error) {
         console.error('Error loading user data:', error);
         showNotification('Error loading user data', 'error');
     }
+}
+
+function closeReportModal() {
+    const reportPreview = document.querySelector('.report-preview');
+    reportPreview.style.display = 'none';
 }
 
 async function reportUser(username) {
@@ -351,10 +366,6 @@ function updateReportedUserMessages(username) {
             message.classList.add('reported-message');
         }
     });
-}
-
-function closeReportModal() {
-    document.getElementById('reportModal').style.display = 'none';
 }
 
 // Funkcje komentarzy użytkownika
@@ -659,3 +670,35 @@ async function initializeApp() {
         onYouTubeIframeAPIReady();
     }
 }
+
+// Add event listener for the close button
+document.querySelector('.close-preview').addEventListener('click', closeReportModal);
+
+// Add event listener for report submit button
+document.querySelector('.report-submit').addEventListener('click', function() {
+    const username = document.getElementById('reportUsername').textContent;
+    reportUser(username);
+    closeReportModal();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const closeBtn = document.querySelector('.close-preview');
+    const reportBtn = document.querySelector('.report-submit');
+    const reportOverlay = document.querySelector('.report-overlay');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeReportModal);
+    }
+
+    if (reportBtn) {
+        reportBtn.addEventListener('click', function() {
+            const username = document.querySelector('.preview-username').textContent;
+            reportUser(username);
+            closeReportModal();
+        });
+    }
+
+    if (reportOverlay) {
+        reportOverlay.addEventListener('click', closeReportModal);
+    }
+});

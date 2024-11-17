@@ -103,6 +103,121 @@
     background: #772ce8;
 }
 
+/* Report Modal Styles */
+.report-preview {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background: #18181b;
+    border: 1px solid #2d2d2d;
+    border-radius: 4px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.report-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+}
+
+.report-preview[style*="display: block"] {
+    display: block;
+}
+
+.report-preview[style*="display: block"] + .report-overlay {
+    display: block;
+}
+
+.user-info {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid #2d2d2d;
+    align-items: center;
+}
+
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-details {
+    flex-grow: 1;
+}
+
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preview-username {
+    color: #efeff1;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.close-preview {
+    background: none;
+    border: none;
+    color: #adadb8;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 16px;
+}
+
+.close-preview:hover {
+    color: #efeff1;
+}
+
+.recent-messages {
+    padding: 12px;
+}
+
+.recent-messages h3 {
+    color: #efeff1;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.message {
+    color: #adadb8;
+    font-size: 13px;
+    padding: 4px 0;
+}
+
+.report-actions {
+    padding: 12px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #2d2d2d;
+}
+
+.report-submit {
+    background: #9147ff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.report-submit:hover {
+    background: #772ce8;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
