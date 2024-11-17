@@ -456,12 +456,17 @@
     display: none;
 }
 
-.report-preview[style*="display: block"] {
+.report-preview.active,
+.report-overlay.active {
     display: block;
 }
 
-.report-preview[style*="display: block"] + .report-overlay {
-    display: block;
+.report-preview.active {
+    z-index: 9999;
+}
+
+.report-overlay.active {
+    z-index: 9998;
 }
 
 .user-info {

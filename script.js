@@ -10,14 +10,6 @@ let lastCommentTimestamp = new Date().toISOString();
 let commentUpdateInterval;
 let player;
 let streamStartTime = new Date();
-let streamStats = {
-    viewers: 32500,
-    followers: 12500,
-    subscribers: 2300,
-    isFollowing: false,
-    isSubscribed: false,
-    timeOffset: 0
-};
 
 // Cache dla komentarzy użytkowników
 const userCommentsCache = new Map();
@@ -51,26 +43,20 @@ function getRecentComments(username) {
 }
 
 // Funkcje pomocnicze
-const fetchData = async (endpoint) => {
+async function fetchData(endpoint) {
     const response = await fetch(`${API_URL}${endpoint}`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-};
+    return response.json();
+}
 
-const postData = async (endpoint, data) => {
+async function postData(endpoint, data) {
     const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response;
-};
-
-// Funkcje kontroli panelu
-function toggleControlPanel() {
-    const panel = document.getElementById('controlPanel');
-    panel.classList.toggle('visible');
+    return response.json();
 }
 
 function formatNumber(num) {
@@ -350,7 +336,9 @@ async function openReportModal(username) {
         };
         overlay.onclick = closeReportModal;
         
-        reportModal.style.display = 'block';
+        // Show modal and overlay
+        reportModal.classList.add('active');
+        overlay.classList.add('active');
     } catch (error) {
         console.error('Error loading user data:', error);
         showNotification('Error loading user data', 'error');
@@ -359,7 +347,9 @@ async function openReportModal(username) {
 
 function closeReportModal() {
     const reportModal = document.getElementById('reportModal');
-    reportModal.style.display = 'none';
+    const overlay = document.querySelector('.report-overlay');
+    reportModal.classList.remove('active');
+    overlay.classList.remove('active');
 }
 
 async function reportUser(username) {
@@ -442,102 +432,6 @@ async function addComment(event) {
         console.error('Błąd podczas dodawania komentarza:', error);
         showNotification('Error adding comment. Please try again.');
     }
-}
-
-// Funkcje UI
-function updateStreamStats() {
-    // Update viewers
-    const viewersElement = document.querySelector('.viewers');
-    if (viewersElement) {
-        viewersElement.innerHTML = `<i class="fas fa-user"></i> ${formatNumber(streamStats.viewers)} viewers`;
-    }
-
-    // Update uptime
-    const uptimeElement = document.querySelector('.uptime');
-    if (uptimeElement) {
-        const elapsed = new Date() - streamStartTime + (streamStats.timeOffset * 1000);
-        const hours = Math.floor(elapsed / 3600000);
-        const minutes = Math.floor((elapsed % 3600000) / 60000);
-        const seconds = Math.floor((elapsed % 60000) / 1000);
-        uptimeElement.innerHTML = `<i class="fas fa-clock"></i> ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    // Update control panel values
-    document.getElementById('viewerCount').textContent = formatNumber(streamStats.viewers);
-    document.getElementById('followerCount').textContent = formatNumber(streamStats.followers);
-    document.getElementById('subCount').textContent = formatNumber(streamStats.subscribers);
-}
-
-function setupStreamButtons() {
-    const followBtn = document.querySelector('.follow-btn');
-    const subscribeBtn = document.querySelector('.subscribe-btn');
-
-    if (followBtn) {
-        followBtn.addEventListener('click', () => {
-            streamStats.isFollowing = !streamStats.isFollowing;
-            if (streamStats.isFollowing) {
-                streamStats.followers += 1;
-                showNotification('Thanks for following! You will now receive notifications when we go live.', 'success');
-                followBtn.innerHTML = '<i class="fas fa-heart"></i> Following';
-                followBtn.style.background = '#2d2d2d';
-            } else {
-                streamStats.followers -= 1;
-                showNotification('You have unfollowed the channel', 'info');
-                followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
-                followBtn.style.background = '#3a3a3d';
-            }
-            updateStreamStats();
-        });
-    }
-
-    if (subscribeBtn) {
-        subscribeBtn.addEventListener('click', () => {
-            if (!streamStats.isSubscribed) {
-                streamStats.subscribers += 1;
-                streamStats.isSubscribed = true;
-                showNotification('Thanks for subscribing! ', 'success');
-                subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribed';
-                updateStreamStats();
-            } else {
-                showNotification('You are already subscribed!', 'info');
-            }
-        });
-    }
-}
-
-function setupControlPanel() {
-    // Viewer control
-    const viewerSlider = document.getElementById('viewerSlider');
-    viewerSlider.addEventListener('input', (e) => {
-        streamStats.viewers = parseInt(e.target.value);
-        updateStreamStats();
-    });
-
-    // Follower control
-    const followerSlider = document.getElementById('followerSlider');
-    followerSlider.addEventListener('input', (e) => {
-        streamStats.followers = parseInt(e.target.value);
-        updateStreamStats();
-    });
-
-    // Subscriber control
-    const subSlider = document.getElementById('subSlider');
-    subSlider.addEventListener('input', (e) => {
-        streamStats.subscribers = parseInt(e.target.value);
-        updateStreamStats();
-    });
-}
-
-// Time control functions
-function adjustTime(seconds) {
-    streamStats.timeOffset += seconds;
-    updateStreamStats();
-}
-
-function resetTime() {
-    streamStats.timeOffset = 0;
-    streamStartTime = new Date();
-    updateStreamStats();
 }
 
 // YouTube Player API
@@ -624,8 +518,7 @@ function setupChannelInteractions() {
             });
 
             // Update viewer count
-            streamStats.viewers = parseInt(viewerCount.replace(/[^0-9]/g, ''));
-            updateStreamStats();
+            document.querySelector('.viewers').innerHTML = `<i class="fas fa-user"></i> ${viewerCount} viewers`;
 
             // Show notification
             showNotification(`Switched to ${channelName}'s channel`);
@@ -636,8 +529,6 @@ function setupChannelInteractions() {
             followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
             followBtn.style.background = '#3a3a3d';
             subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribe';
-            streamStats.isFollowing = false;
-            streamStats.isSubscribed = false;
         });
     });
 }
@@ -668,11 +559,6 @@ function startCountdown() {
 document.addEventListener('DOMContentLoaded', () => {
     startCountdown();
 
-    // Initialize stream stats and buttons first
-    setupStreamButtons();
-    setupControlPanel();
-    updateStreamStats();
-
     // Handle comment form
     document.getElementById('commentForm').addEventListener('submit', addComment);
 
@@ -682,26 +568,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Inicjalizacja
 async function initializeApp() {
-    // Check if user is logged in
-    const username = localStorage.getItem('username');
-    if (!username) {
-        // Redirect to login page if not logged in
-        window.location.href = '/index.html';
-        return;
-    }
-
-    // Load main content
-    await loadComments(true);  // Initial load with true flag
+    console.log('Initializing app...');
     
-    // Initialize YouTube player
-    if (!window.YT) {
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    } else {
-        onYouTubeIframeAPIReady();
-    }
+    // Start real-time comments
+    startRealTimeComments();
+    
+    // Setup channel interactions
+    setupChannelInteractions();
+    
+    // Load initial comments
+    loadComments(true);
 }
 
 // Add event listener for the close button
