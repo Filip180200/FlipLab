@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlipLab - Login</title>
-    <link rel="stylesheet" href="style.css">
+    <title>FlipLab - Stream Viewer</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/notifications.css">
+    <link rel="stylesheet" href="css/animations.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .login-container {
@@ -12,9 +17,12 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            width: 100%;
             background-color: #181818;
             color: white;
             padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         .auth-form {
             background-color: #242424;

@@ -3,6 +3,65 @@ function toggleForm(formToShow) {
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('registerForm').style.display = 'none';
     document.getElementById(formToShow).style.display = 'block';
+
+    if (formToShow === 'registerForm') {
+        showNotification('You have 15 minutes to complete the registration', 900);
+    }
+}
+
+// Function to create and show notification
+function showNotification(message, duration = 15) {
+    // Remove any existing notification
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    // Create notification elements
+    const notification = document.createElement('div');
+    notification.className = 'notification warning';
+
+    const content = document.createElement('div');
+    content.className = 'notification-content';
+
+    const messageEl = document.createElement('p');
+    messageEl.className = 'notification-message';
+    messageEl.textContent = message;
+
+    const timer = document.createElement('div');
+    timer.className = 'notification-timer';
+
+    const button = document.createElement('button');
+    button.className = 'notification-button';
+    button.textContent = 'OK';
+
+    // Assemble notification
+    content.appendChild(messageEl);
+    content.appendChild(timer);
+    notification.appendChild(content);
+    notification.appendChild(button);
+    document.body.appendChild(notification);
+
+    // Start countdown
+    let timeLeft = duration;
+    const interval = setInterval(() => {
+        timeLeft--;
+        timer.textContent = `Time remaining: ${timeLeft} seconds`;
+
+        if (timeLeft <= 0) {
+            clearInterval(interval);
+            notification.remove();
+            window.location.href = '/'; // Redirect to home page
+        }
+    }, 1000);
+
+    // Handle OK button click
+    button.addEventListener('click', () => {
+        clearInterval(interval);
+        notification.remove();
+    });
+
+    return notification;
 }
 
 // Handle registration form submission

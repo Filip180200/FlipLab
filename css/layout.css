@@ -1,0 +1,68 @@
+/* ==========================================================================
+   Layout & Container Styles
+   ========================================================================== */
+.content-wrapper {
+    display: flex;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    gap: 20px;
+    background-color: #181818;
+    overflow: hidden;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    min-width: 0;
+}
+
+.video-section {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.video-container {
+    width: 100%;
+    background: #0e0e10;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#player {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    position: relative;
+}
+
+/* Login page specific layout */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+    background-color: #181818;
+    color: white;
+    overflow-x: hidden;
+}
+
+/* Thank you page layout */
+.thank-you-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    text-align: center;
+    background-color: #181818;
+}
