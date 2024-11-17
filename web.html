@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlipLab - Stream Viewer</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/notifications.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/channels.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Add styles for timer */
+        .timer-container {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+        }
+        .countdown {
+            color: #ff4747;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo and site name -->
+    <div class="site-header">
+        <div class="logo-container">
+            <i class="fas fa-sync-alt logo-icon"></i>
+            <span class="site-name">FlipLab</span>
+            <div class="timer-container">
+                <span class="countdown" id="countdown">15:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zawartość strony (wideo i komentarze) -->
+    <div id="mainContent">
+        <div class="content-wrapper">
+            <div class="channels-sidebar">
+                <h3 class="channels-header">Recommended</h3>
+                <div class="channel-list">
+                    <div class="channel">
+                        <img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/5a72c3d9-424a-40a6-bf23-73370cd85578-profile_image-70x70.png" alt="Lofi Girl">
+                        <div class="channel-details">
+                            <div class="channel-name">Lofi Girl</div>
+                            <div class="channel-game">Just Chatting</div>
+                        </div>
+                        <div class="viewer-count">12.8K</div>
+                    </div>
+                    <div class="channel">
+                        <img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/7ed5e0c6-0191-4eef-8328-4af6e4ea5318-profile_image-70x70.png" alt="pokimane">
+                        <div class="channel-details">
+                            <div class="channel-name">pokimane</div>
+                            <div class="channel-game">Just Chatting</div>
+                        </div>
+                        <div class="viewer-count">25.4K</div>
+                    </div>
+                    <div class="channel">
+                        <img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/f040f0d4-8b30-4215-bd9e-06a2c3977a8c-profile_image-70x70.png" alt="Faker">
+                        <div class="channel-details">
+                            <div class="channel-name">Faker</div>
+                            <div class="channel-game">League of Legends</div>
+                        </div>
+                        <div class="viewer-count">89.2K</div>
+                    </div>
+                    <div class="channel">
+                        <img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/32805a78-d927-48bd-8089-bf5efed53ea4-profile_image-70x70.png" alt="Dream">
+                        <div class="channel-details">
+                            <div class="channel-name">Dream</div>
+                            <div class="channel-game">Minecraft</div>
+                        </div>
+                        <div class="viewer-count">45.6K</div>
+                    </div>
+                </div>
+            </div>
+            <div class="main-content">
+                <div class="video-section">
+                    <div class="video-container">
+                        <div id="player"></div>
+                        <div class="stream-info">
+                            <div class="stream-header">
+                                <div class="stream-header-left">
+                                    <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/cd921fcd-53fc-4b1d-be23-0787bc36b756-profile_image-70x70.png" alt="Channel Avatar" class="stream-avatar">
+                                    <div class="stream-details">
+                                        <h2 class="stream-title">Awesome Gaming Stream</h2>
+                                        <div class="channel-info">
+                                            <div class="channel-name">Channel Name</div>
+                                        </div>
+                                        <div class="category-section">
+                                            <a href="#" class="channel-category">Just Chatting</a>
+                                            <span class="tag">English</span>
+                                            <span class="tag">Entertainment</span>
+                                        </div>
+                                    </div>
+                                    <div class="stream-buttons">
+                                        <div class="buttons-row">
+                                            <button class="follow-btn"><i class="fas fa-heart"></i> <span>Follow</span></button>
+                                            <button class="subscribe-btn"><i class="far fa-star"></i> <span>Subscribe</span></button>
+                                        </div>
+                                        <div class="stream-viewers">
+                                            <i class="far fa-user"></i>
+                                            <span class="viewer-label">Viewers</span>
+                                            <span class="viewer-number">1,200</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-section">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-message">
+                            <img src="https://static-cdn.jtvnw.net/user-default-pictures-uv/13e5fa74-defa-11e9-809c-784f43822e80-profile_image-70x70.png" class="chat-avatar" alt="User avatar">
+                            <div class="message-content-wrapper">
+                                <div class="message-header">
+                                    <span class="username">User123</span>
+                                </div>
+                                <div class="message-content">Hello everyone!</div>
+                            </div>
+                        </div>
+                    </div>
+                    <form id="commentForm">
+                        <input type="text" id="comment" placeholder="Napisz komentarz..." required>
+                        <button type="submit">Wyślij</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle follow button
+            const followButton = document.querySelector('.follow-btn');
+            if (followButton) {
+                followButton.addEventListener('click', function() {
+                    const isFollowing = this.classList.toggle('following');
+                    const icon = this.querySelector('i');
+                    const text = this.querySelector('span');
+                    
+                    if (isFollowing) {
+                        icon.className = 'fas fa-heart-broken';
+                        text.textContent = 'Unfollow';
+                        showNotification('Channel followed!', 'success');
+                    } else {
+                        icon.className = 'fas fa-heart';
+                        text.textContent = 'Follow';
+                        showNotification('Channel unfollowed', 'info');
+                    }
+                });
+            }
+
+            // Handle subscribe button
+            const subscribeButton = document.querySelector('.subscribe-btn');
+            if (subscribeButton) {
+                subscribeButton.addEventListener('click', function() {
+                    const isSubscribed = this.classList.toggle('subscribed');
+                    const icon = this.querySelector('i');
+                    
+                    if (isSubscribed) {
+                        icon.className = 'fas fa-star';
+                        showNotification('Subscribed to channel!', 'success');
+                    } else {
+                        icon.className = 'far fa-star';
+                        showNotification('Subscription cancelled', 'info');
+                    }
+                });
+            }
+
+            // Settings button notification
+            const settingsButton = document.querySelector('.settings-btn');
+            if (settingsButton) {
+                settingsButton.addEventListener('click', function() {
+                    showNotification('Settings will be available in a future update!', 'info');
+                });
+            }
+
+            // Handle clicks
+            document.addEventListener('click', function(e) {
+                const reportModal = document.getElementById('reportModal');
+                const reportOverlay = document.querySelector('.report-overlay');
+
+                // Handle username clicks
+                if (e.target.classList.contains('username')) {
+                    const messageEl = e.target.closest('.chat-message');
+                    const username = messageEl.querySelector('.username').textContent;
+                    const avatar = messageEl.querySelector('.chat-avatar').src;
+                    
+                    // Update modal content
+                    reportModal.querySelector('#reportUsername').textContent = username;
+                    reportModal.querySelector('.chat-avatar').src = avatar;
+                    
+                    // Show modal and overlay
+                    reportModal.style.display = 'block';
+                    reportOverlay.style.display = 'block';
+                }
+
+                // Handle report button clicks
+                if (e.target.closest('.report-btn')) {
+                    const messageEl = e.target.closest('.chat-message');
+                    const username = messageEl.querySelector('.username').textContent;
+                    const avatar = messageEl.querySelector('.chat-avatar').src;
+                    
+                    // Update modal content
+                    reportModal.querySelector('#reportUsername').textContent = username;
+                    reportModal.querySelector('.chat-avatar').src = avatar;
+                    
+                    // Show modal and overlay
+                    reportModal.style.display = 'block';
+                    reportOverlay.style.display = 'block';
+                }
+
+                // Close on overlay click
+                if (e.target.classList.contains('report-overlay')) {
+                    reportModal.style.display = 'none';
+                    reportOverlay.style.display = 'none';
+                }
+
+                // Close on close button click
+                if (e.target.closest('.close-preview')) {
+                    reportModal.style.display = 'none';
+                    reportOverlay.style.display = 'none';
+                }
+
+                // Handle report submit
+                if (e.target.closest('.report-submit')) {
+                    const username = reportModal.querySelector('#reportUsername').textContent;
+                    showNotification('User ' + username + ' has been reported.', 'info');
+                    reportModal.style.display = 'none';
+                    reportOverlay.style.display = 'none';
+                }
+            });
+
+            // Notification function
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                
+                let icon = 'fa-info-circle';
+                if (type === 'success') {
+                    icon = 'fa-check-circle';
+                }
+
+                notification.innerHTML = `
+                    <i class="fas ${icon} notification-icon"></i>
+                    <p class="notification-message">${message}</p>
+                    <button class="notification-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                document.body.appendChild(notification);
+                
+                // Show notification with animation
+                setTimeout(() => notification.classList.add('show'), 100);
+
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+
+                // Close button functionality
+                notification.querySelector('.notification-close').addEventListener('click', () => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                });
+            }
+        });
+    </script>
+    <!-- Report Overlay -->
+    <div class="report-overlay"></div>
+    
+    <!-- Report Modal -->
+    <div id="reportModal" class="report-preview">
+        <div class="user-info">
+            <img src="" class="chat-avatar" alt="User avatar">
+            <div class="user-details">
+                <div class="user-header">
+                <span class="preview-username" id="reportUsername"></span>
+                <button class="close-preview"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="recent-messages">
+            <h3>Recent Comments</h3>
+            <div id="reportUserComments"></div>
+        </div>
+        <div class="report-actions">
+            <button class="report-submit">Report User</button>
+        </div>
+    </div>
+
+
+</body>
+</html>

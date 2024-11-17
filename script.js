@@ -10,20 +10,21 @@ let lastCommentTimestamp = new Date().toISOString();
 let commentUpdateInterval;
 let player;
 let streamStartTime = new Date();
-let streamStats = {
-    viewers: 32500,
-    followers: 12500,
-    subscribers: 2300,
-    isFollowing: false,
-    isSubscribed: false,
-    timeOffset: 0
-};
 
 // Cache dla komentarzy użytkowników
 const userCommentsCache = new Map();
 
 // Set to store reported users
 const reportedUsers = new Set();
+
+// Mock data for testing
+const mockUserComments = {
+    'User123': [
+        { comment: 'Hello everyone!', timestamp: new Date().toISOString() },
+        { comment: 'This stream is amazing!', timestamp: new Date(Date.now() - 5000).toISOString() },
+        { comment: "Can't wait for the next one!", timestamp: new Date(Date.now() - 10000).toISOString() }
+    ]
+};
 
 function addCommentToCache(username, comment) {
     if (!userCommentsCache.has(username)) {
@@ -42,26 +43,20 @@ function getRecentComments(username) {
 }
 
 // Funkcje pomocnicze
-const fetchData = async (endpoint) => {
+async function fetchData(endpoint) {
     const response = await fetch(`${API_URL}${endpoint}`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-};
+    return response.json();
+}
 
-const postData = async (endpoint, data) => {
+async function postData(endpoint, data) {
     const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response;
-};
-
-// Funkcje kontroli panelu
-function toggleControlPanel() {
-    const panel = document.getElementById('controlPanel');
-    panel.classList.toggle('visible');
+    return response.json();
 }
 
 function formatNumber(num) {
@@ -73,15 +68,51 @@ function formatNumber(num) {
     return num.toString();
 }
 
-function showNotification(message) {
+function showNotification(message, type = 'info') {
+    // Browser notification
+    if (Notification.permission === "granted") {
+        new Notification("FlipLab", {
+            body: message,
+            icon: '/assets/favicon.ico'
+        });
+    } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification("FlipLab", {
+                    body: message,
+                    icon: '/assets/favicon.ico'
+                });
+            }
+        });
+    }
+
+    // In-app notification
     const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
+    notification.className = `notification ${type} show`;
+    
+    const icon = document.createElement('i');
+    icon.className = type === 'success' ? 'fas fa-check notification-icon' : 'fas fa-bell notification-icon';
+    
+    const messageText = document.createElement('p');
+    messageText.className = 'notification-message';
+    messageText.textContent = message;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'notification-close';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.onclick = () => notification.remove();
+    
+    notification.appendChild(icon);
+    notification.appendChild(messageText);
+    notification.appendChild(closeBtn);
+    
     document.body.appendChild(notification);
     
+    // Auto-remove after 5 seconds
     setTimeout(() => {
-        notification.remove();
-    }, 3000);
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
 }
 
 // Funkcje zarządzania komentarzami
@@ -168,24 +199,41 @@ function addSingleComment(comment, scrollToBottom = true) {
 
 function createCommentElement(comment) {
     const commentElement = document.createElement('div');
-    commentElement.classList.add('comment', 'new-comment');
+    commentElement.classList.add('chat-message');
     commentElement.dataset.commentId = comment.id;
 
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('comment-content-wrapper');
-
     // Avatar
-    const avatarContainer = createAvatarElement(comment);
-    
-    // Tekst
-    const textContainer = createTextContainer(comment);
+    const avatar = document.createElement('img');
+    avatar.src = comment.avatar_url || DEFAULT_AVATAR;
+    avatar.className = 'chat-avatar';
+    avatar.alt = `${comment.username}'s avatar`;
+    avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
-    wrapper.appendChild(avatarContainer);
-    wrapper.appendChild(textContainer);
-    commentElement.appendChild(wrapper);
+    // Message content wrapper
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'message-content-wrapper';
 
-    // Usuń klasę animacji po zakończeniu
-    setTimeout(() => commentElement.classList.remove('new-comment'), 500);
+    // Message header
+    const header = document.createElement('div');
+    header.className = 'message-header';
+
+    const username = document.createElement('span');
+    username.className = 'username';
+    username.textContent = comment.username;
+    username.onclick = () => openReportModal(comment.username);
+
+    // Message content
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.textContent = comment.comment;
+
+    // Assemble the elements
+    header.appendChild(username);
+    contentWrapper.appendChild(header);
+    contentWrapper.appendChild(content);
+
+    commentElement.appendChild(avatar);
+    commentElement.appendChild(contentWrapper);
 
     return commentElement;
 }
@@ -225,74 +273,122 @@ function createTextContainer(comment) {
 // Funkcje raportu użytkownika
 async function openReportModal(username) {
     try {
-        const userData = await fetchData(`/api/user/${username}`);
-        const userComments = await fetchData(`/api/user/${username}/last-comments`);
+        // Get the user's avatar from their comments
+        const userComments = document.querySelectorAll('.chat-message');
+        let userAvatar = DEFAULT_AVATAR;
+        let recentComments = [];
+        
+        // Collect comments and avatar for the user
+        userComments.forEach(commentEl => {
+            const commentUsername = commentEl.querySelector('.username').textContent;
+            if (commentUsername === username) {
+                // Get avatar if we haven't found it yet
+                if (userAvatar === DEFAULT_AVATAR) {
+                    const avatarImg = commentEl.querySelector('.chat-avatar');
+                    userAvatar = avatarImg ? avatarImg.src : DEFAULT_AVATAR;
+                }
+                
+                // Get comment text
+                const commentText = commentEl.querySelector('.message-content').textContent;
+                recentComments.push({
+                    comment: commentText,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
         
         const reportModal = document.getElementById('reportModal');
         const reportUsername = document.getElementById('reportUsername');
-        const reportAvatar = document.getElementById('reportAvatar');
+        const avatar = reportModal.querySelector('.chat-avatar');
         const commentsList = document.getElementById('reportUserComments');
         
-        reportUsername.innerText = `Zgłoś użytkownika: ${username}`;
-        reportAvatar.src = userData.avatar_url || DEFAULT_AVATAR;
-        reportAvatar.onerror = () => reportAvatar.src = DEFAULT_AVATAR;
+        reportUsername.textContent = username;
+        avatar.src = userAvatar;
+        avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
-        // Wyczyść poprzednie komentarze
+        // Clear previous comments
         commentsList.innerHTML = '';
         
-        // Wyświetl komentarze użytkownika
-        userComments.forEach(comment => {
-            const commentElement = document.createElement('div');
-            commentElement.className = 'comment';
-            commentElement.textContent = comment.comment;
-            commentsList.appendChild(commentElement);
-        });
-        
-        reportModal.style.display = 'block';
-    } catch (error) {
-        console.error('Błąd podczas pobierania danych użytkownika:', error);
-        document.getElementById('reportModal').style.display = 'block';
-    }
-}
-
-async function reportUser(username) {
-    const reportingUsername = localStorage.getItem('nickname');
-    if (!reportingUsername) {
-        showNotification('Error: You must be logged in to report users');
-        return;
-    }
-
-    try {
-        await postData('/api/report', {
-            reportedUsername: username,
-            reportingUsername,
-            timestamp: new Date().toISOString()
-        });
-        
-        // Add user to reported set and update their messages
-        reportedUsers.add(username);
-        updateReportedUserMessages(username);
-        
-        showNotification(`User ${username} has been reported`);
-        closeReportModal();
-    } catch (error) {
-        console.error('Error reporting user:', error);
-        showNotification('Failed to report user. Please try again.');
-    }
-}
-
-function updateReportedUserMessages(username) {
-    const messages = document.querySelectorAll('.message');
-    messages.forEach(message => {
-        const usernameSpan = message.querySelector('.username');
-        if (usernameSpan && usernameSpan.textContent === username) {
-            message.classList.add('reported-message');
+        // Add recent comments in reverse chronological order
+        if (recentComments.length > 0) {
+            recentComments.slice(-3).forEach(comment => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.textContent = comment.comment;
+                commentsList.appendChild(messageDiv);
+            });
+        } else {
+            const noCommentsDiv = document.createElement('div');
+            noCommentsDiv.className = 'message';
+            noCommentsDiv.textContent = 'No recent comments';
+            commentsList.appendChild(noCommentsDiv);
         }
-    });
+        
+        // Setup event handlers
+        const closeButton = reportModal.querySelector('.close-preview');
+        const submitButton = reportModal.querySelector('.report-submit');
+        const overlay = document.querySelector('.report-overlay');
+        
+        closeButton.onclick = closeReportModal;
+        submitButton.onclick = () => {
+            reportUser(username);
+            closeReportModal();
+        };
+        overlay.onclick = closeReportModal;
+        
+        // Show modal and overlay
+        reportModal.classList.add('active');
+        overlay.classList.add('active');
+    } catch (error) {
+        console.error('Error loading user data:', error);
+        showNotification('Error loading user data', 'error');
+    }
 }
 
 function closeReportModal() {
-    document.getElementById('reportModal').style.display = 'none';
+    const reportModal = document.getElementById('reportModal');
+    const overlay = document.querySelector('.report-overlay');
+    reportModal.classList.remove('active');
+    overlay.classList.remove('active');
+}
+
+async function reportUser(username) {
+    try {
+        // Get the current user (you might want to replace this with actual logged-in user)
+        const reportingUsername = "Current User";
+        
+        // Send report to server
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reportedUsername: username,
+                reportingUsername: reportingUsername
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit report');
+        }
+
+        // Show success notification
+        showNotification(`User ${username} has been reported`, 'success');
+        
+        // Mark user's messages as reported
+        const userMessages = document.querySelectorAll('.chat-message');
+        userMessages.forEach(message => {
+            const messageUsername = message.querySelector('.username').textContent;
+            if (messageUsername === username) {
+                message.classList.add('reported-message');
+            }
+        });
+
+    } catch (error) {
+        console.error('Error reporting user:', error);
+        showNotification('Failed to report user', 'error');
+    }
 }
 
 // Funkcje komentarzy użytkownika
@@ -301,7 +397,7 @@ async function addComment(event) {
     
     const commentInput = document.getElementById('comment');
     const comment = commentInput.value.trim();
-    const nickname = localStorage.getItem('nickname');
+    const nickname = localStorage.getItem('username');
     
     if (!comment) return;
     
@@ -336,101 +432,6 @@ async function addComment(event) {
         console.error('Błąd podczas dodawania komentarza:', error);
         showNotification('Error adding comment. Please try again.');
     }
-}
-
-// Funkcje UI
-function updateStreamStats() {
-    // Update viewers
-    const viewersElement = document.querySelector('.viewers');
-    if (viewersElement) {
-        viewersElement.innerHTML = `<i class="fas fa-user"></i> ${formatNumber(streamStats.viewers)} viewers`;
-    }
-
-    // Update uptime
-    const uptimeElement = document.querySelector('.uptime');
-    if (uptimeElement) {
-        const elapsed = new Date() - streamStartTime + (streamStats.timeOffset * 1000);
-        const hours = Math.floor(elapsed / 3600000);
-        const minutes = Math.floor((elapsed % 3600000) / 60000);
-        const seconds = Math.floor((elapsed % 60000) / 1000);
-        uptimeElement.innerHTML = `<i class="fas fa-clock"></i> ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    // Update control panel values
-    document.getElementById('viewerCount').textContent = formatNumber(streamStats.viewers);
-    document.getElementById('followerCount').textContent = formatNumber(streamStats.followers);
-    document.getElementById('subCount').textContent = formatNumber(streamStats.subscribers);
-}
-
-function setupStreamButtons() {
-    const followBtn = document.querySelector('.follow-btn');
-    const subscribeBtn = document.querySelector('.subscribe-btn');
-
-    if (followBtn) {
-        followBtn.addEventListener('click', () => {
-            streamStats.isFollowing = !streamStats.isFollowing;
-            if (streamStats.isFollowing) {
-                streamStats.followers += 1;
-                showNotification('Thanks for following!');
-                followBtn.innerHTML = '<i class="fas fa-heart"></i> Following';
-                followBtn.style.background = '#2d2d2d';
-            } else {
-                streamStats.followers -= 1;
-                followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
-                followBtn.style.background = '#3a3a3d';
-            }
-            updateStreamStats();
-        });
-    }
-
-    if (subscribeBtn) {
-        subscribeBtn.addEventListener('click', () => {
-            if (!streamStats.isSubscribed) {
-                streamStats.subscribers += 1;
-                streamStats.isSubscribed = true;
-                showNotification('Thanks for subscribing! ');
-                subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribed';
-                updateStreamStats();
-            } else {
-                showNotification('You are already subscribed!');
-            }
-        });
-    }
-}
-
-function setupControlPanel() {
-    // Viewer control
-    const viewerSlider = document.getElementById('viewerSlider');
-    viewerSlider.addEventListener('input', (e) => {
-        streamStats.viewers = parseInt(e.target.value);
-        updateStreamStats();
-    });
-
-    // Follower control
-    const followerSlider = document.getElementById('followerSlider');
-    followerSlider.addEventListener('input', (e) => {
-        streamStats.followers = parseInt(e.target.value);
-        updateStreamStats();
-    });
-
-    // Subscriber control
-    const subSlider = document.getElementById('subSlider');
-    subSlider.addEventListener('input', (e) => {
-        streamStats.subscribers = parseInt(e.target.value);
-        updateStreamStats();
-    });
-}
-
-// Time control functions
-function adjustTime(seconds) {
-    streamStats.timeOffset += seconds;
-    updateStreamStats();
-}
-
-function resetTime() {
-    streamStats.timeOffset = 0;
-    streamStartTime = new Date();
-    updateStreamStats();
 }
 
 // YouTube Player API
@@ -517,8 +518,7 @@ function setupChannelInteractions() {
             });
 
             // Update viewer count
-            streamStats.viewers = parseInt(viewerCount.replace(/[^0-9]/g, ''));
-            updateStreamStats();
+            document.querySelector('.viewers').innerHTML = `<i class="fas fa-user"></i> ${viewerCount} viewers`;
 
             // Show notification
             showNotification(`Switched to ${channelName}'s channel`);
@@ -529,75 +529,85 @@ function setupChannelInteractions() {
             followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
             followBtn.style.background = '#3a3a3d';
             subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribe';
-            streamStats.isFollowing = false;
-            streamStats.isSubscribed = false;
         });
     });
 }
 
-// Inicjalizacja
-async function initializeApp() {
-    // Check if nickname exists
-    const savedNickname = localStorage.getItem('nickname');
-    if (savedNickname) {
-        // Load main content first
-        document.getElementById('mainContent').style.display = 'block';
-        await loadComments(true);  // Initial load with true flag
+// Timer functionality
+let sessionTime = 15 * 60; // 15 minutes in seconds
+const countdownElement = document.getElementById('countdown');
+
+// Start countdown timer
+function startCountdown() {
+    const endTime = Date.now() + (sessionTime * 1000);
+    
+    const timer = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
         
-        // Hide nickname prompt after content is loaded
-        document.getElementById('nicknamePrompt').style.display = 'none';
-        
-        // Initialize YouTube player
-        if (!window.YT) {
-            const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api';
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        } else {
-            onYouTubeIframeAPIReady();
+        if (timeLeft === 0) {
+            clearInterval(timer);
+            window.location.href = '/thank-you.html';
         }
-    }
+        
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize stream stats and buttons first
-    setupStreamButtons();
-    setupControlPanel();
-    updateStreamStats();
-
-    // Handle nickname form
-    document.getElementById('nicknameForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const nickname = document.getElementById('nickname').value;
-        
-        if (nickname.trim()) {
-            localStorage.setItem('nickname', nickname);
-            
-            // Load main content
-            document.getElementById('mainContent').style.display = 'block';
-            await loadComments(true);  // Initial load with true flag
-            
-            // Hide nickname prompt after content is loaded
-            document.getElementById('nicknamePrompt').style.display = 'none';
-            
-            // Initialize YouTube player after showing main content
-            if (!window.YT) {
-                const tag = document.createElement('script');
-                tag.src = 'https://www.youtube.com/iframe_api';
-                const firstScriptTag = document.getElementsByTagName('script')[0];
-                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-            } else {
-                onYouTubeIframeAPIReady();
-            }
-        }
-    });
+    startCountdown();
 
     // Handle comment form
     document.getElementById('commentForm').addEventListener('submit', addComment);
 
-    // Refresh comments periodically (without clearing)
-    //setInterval(() => loadComments(false), 5000);
-
     // Initialize the app
     initializeApp();
+});
+
+// Inicjalizacja
+async function initializeApp() {
+    console.log('Initializing app...');
+    
+    // Start real-time comments
+    startRealTimeComments();
+    
+    // Setup channel interactions
+    setupChannelInteractions();
+    
+    // Load initial comments
+    loadComments(true);
+}
+
+// Add event listener for the close button
+document.querySelector('.close-preview').addEventListener('click', closeReportModal);
+
+// Add event listener for report submit button
+document.querySelector('.report-submit').addEventListener('click', function() {
+    const username = document.getElementById('reportUsername').textContent;
+    reportUser(username);
+    closeReportModal();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const closeBtn = document.querySelector('.close-preview');
+    const reportBtn = document.querySelector('.report-submit');
+    const reportOverlay = document.querySelector('.report-overlay');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeReportModal);
+    }
+
+    if (reportBtn) {
+        reportBtn.addEventListener('click', function() {
+            const username = document.querySelector('.preview-username').textContent;
+            reportUser(username);
+            closeReportModal();
+        });
+    }
+
+    if (reportOverlay) {
+        reportOverlay.addEventListener('click', closeReportModal);
+    }
 });

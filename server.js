@@ -38,6 +38,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, './')));
+app.use('/css', express.static(path.join(__dirname, 'css')));
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -209,9 +210,96 @@ const addSimulatedComment = async (req, res, next) => {
     }
 };
 
-// Database initialization
-const initializeDatabase = async () => {
+// Initialize database tables
+async function initializeDatabase() {
     try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                age INTEGER NOT NULL CHECK (age >= 13),
+                gender VARCHAR(50) NOT NULL,
+                terms_accepted BOOLEAN NOT NULL DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        console.log('Database tables initialized');
+    } catch (error) {
+        console.error('Error initializing database:', error);
+    }
+}
+
+// Register new user
+app.post('/api/register', async (req, res) => {
+    try {
+        const { firstName, lastName, age, gender, termsAccepted } = req.body;
+        
+        // Capitalize first letter of each name and make the rest lowercase
+        const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
+        const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
+        
+        // Generate username (FirstName LastName)
+        const username = `${formattedFirstName} ${formattedLastName}`;
+            
+        // Check if username exists
+        const checkResult = await pool.query(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
+            [username]
+        );
+        
+        if (checkResult.rows[0].exists) {
+            return res.status(400).json({ error: 'This name is already registered' });
+        }
+
+        // Insert new user
+        await pool.query(
+            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted]
+        );
+
+        res.json({ username });
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+// Check if username exists
+app.get('/api/check-username/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await pool.query(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
+            [username]
+        );
+        res.json({ exists: result.rows[0].exists });
+    } catch (error) {
+        console.error('Error checking username:', error);
+        res.status(500).json({ error: 'Failed to check username' });
+    }
+});
+
+// Database initialization
+const initializeDatabaseTables = async () => {
+    try {
+        // Create users table
+        await executeQuery(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                age INTEGER NOT NULL,
+                gender VARCHAR(50) NOT NULL,
+                terms_accepted BOOLEAN NOT NULL DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Existing tables
         await executeQuery(`
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
@@ -272,4 +360,5 @@ const startServer = () => {
 // Initialize application
 connectToDatabase();
 initializeDatabase();
+initializeDatabaseTables();
 startServer();
