@@ -30,15 +30,33 @@
     line-height: 1.4;
     word-wrap: break-word;
     animation: fadeIn 0.3s ease forwards;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.chat-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.message-content-wrapper {
+    flex-grow: 1;
 }
 
 .message-header {
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .username {
     font-weight: 600;
     color: #9147ff;
+    cursor: pointer;
 }
 
 .message-content {

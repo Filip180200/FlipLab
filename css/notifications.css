@@ -16,6 +16,24 @@
     gap: 12px;
     transform: translateX(120%);
     transition: transform 0.3s ease-out;
+    min-width: 300px;
+    border-left: 4px solid #9147ff;
+}
+
+.notification.success {
+    border-left-color: #00b894;
+}
+
+.notification.success .notification-icon {
+    color: #00b894;
+}
+
+.notification.info {
+    border-left-color: #9147ff;
+}
+
+.notification.info .notification-icon {
+    color: #9147ff;
 }
 
 .notification.show {
@@ -24,12 +42,12 @@
 
 .notification-icon {
     font-size: 20px;
-    color: #9147ff;
 }
 
 .notification-message {
     font-size: 14px;
     margin: 0;
+    flex-grow: 1;
 }
 
 .notification-close {
@@ -37,9 +55,13 @@
     border: none;
     color: #adadb8;
     cursor: pointer;
-    padding: 0;
+    padding: 4px;
     font-size: 16px;
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
 }
 
 .notification-close:hover {

@@ -73,15 +73,51 @@ function formatNumber(num) {
     return num.toString();
 }
 
-function showNotification(message) {
+function showNotification(message, type = 'info') {
+    // Browser notification
+    if (Notification.permission === "granted") {
+        new Notification("FlipLab", {
+            body: message,
+            icon: '/assets/favicon.ico'
+        });
+    } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification("FlipLab", {
+                    body: message,
+                    icon: '/assets/favicon.ico'
+                });
+            }
+        });
+    }
+
+    // In-app notification
     const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
+    notification.className = `notification ${type} show`;
+    
+    const icon = document.createElement('i');
+    icon.className = type === 'success' ? 'fas fa-check notification-icon' : 'fas fa-bell notification-icon';
+    
+    const messageText = document.createElement('p');
+    messageText.className = 'notification-message';
+    messageText.textContent = message;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'notification-close';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.onclick = () => notification.remove();
+    
+    notification.appendChild(icon);
+    notification.appendChild(messageText);
+    notification.appendChild(closeBtn);
+    
     document.body.appendChild(notification);
     
+    // Auto-remove after 5 seconds
     setTimeout(() => {
-        notification.remove();
-    }, 3000);
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
 }
 
 // Funkcje zarządzania komentarzami
@@ -168,24 +204,41 @@ function addSingleComment(comment, scrollToBottom = true) {
 
 function createCommentElement(comment) {
     const commentElement = document.createElement('div');
-    commentElement.classList.add('comment', 'new-comment');
+    commentElement.classList.add('chat-message');
     commentElement.dataset.commentId = comment.id;
 
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('comment-content-wrapper');
-
     // Avatar
-    const avatarContainer = createAvatarElement(comment);
-    
-    // Tekst
-    const textContainer = createTextContainer(comment);
+    const avatar = document.createElement('img');
+    avatar.src = comment.avatar_url || DEFAULT_AVATAR;
+    avatar.className = 'chat-avatar';
+    avatar.alt = `${comment.username}'s avatar`;
+    avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
-    wrapper.appendChild(avatarContainer);
-    wrapper.appendChild(textContainer);
-    commentElement.appendChild(wrapper);
+    // Message content wrapper
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'message-content-wrapper';
 
-    // Usuń klasę animacji po zakończeniu
-    setTimeout(() => commentElement.classList.remove('new-comment'), 500);
+    // Message header
+    const header = document.createElement('div');
+    header.className = 'message-header';
+
+    const username = document.createElement('span');
+    username.className = 'username';
+    username.textContent = comment.username;
+    username.onclick = () => openReportModal(comment.username);
+
+    // Message content
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.textContent = comment.comment;
+
+    // Assemble the elements
+    header.appendChild(username);
+    contentWrapper.appendChild(header);
+    contentWrapper.appendChild(content);
+
+    commentElement.appendChild(avatar);
+    commentElement.appendChild(contentWrapper);
 
     return commentElement;
 }
@@ -230,28 +283,37 @@ async function openReportModal(username) {
         
         const reportModal = document.getElementById('reportModal');
         const reportUsername = document.getElementById('reportUsername');
-        const reportAvatar = document.getElementById('reportAvatar');
+        const avatar = reportModal.querySelector('.chat-avatar');
         const commentsList = document.getElementById('reportUserComments');
         
-        reportUsername.innerText = `Zgłoś użytkownika: ${username}`;
-        reportAvatar.src = userData.avatar_url || DEFAULT_AVATAR;
-        reportAvatar.onerror = () => reportAvatar.src = DEFAULT_AVATAR;
+        reportUsername.textContent = username;
+        avatar.src = userData.avatar_url || DEFAULT_AVATAR;
+        avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
-        // Wyczyść poprzednie komentarze
+        // Clear previous comments
         commentsList.innerHTML = '';
         
-        // Wyświetl komentarze użytkownika
-        userComments.forEach(comment => {
-            const commentElement = document.createElement('div');
-            commentElement.className = 'comment';
-            commentElement.textContent = comment.comment;
-            commentsList.appendChild(commentElement);
-        });
+        // Add recent comments in reverse chronological order
+        if (userComments && userComments.length > 0) {
+            userComments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                       .slice(0, 3) // Get last 3 comments
+                       .forEach(comment => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.textContent = comment.comment;
+                commentsList.appendChild(messageDiv);
+            });
+        } else {
+            const noCommentsDiv = document.createElement('div');
+            noCommentsDiv.className = 'message';
+            noCommentsDiv.textContent = 'No recent comments';
+            commentsList.appendChild(noCommentsDiv);
+        }
         
         reportModal.style.display = 'block';
     } catch (error) {
-        console.error('Błąd podczas pobierania danych użytkownika:', error);
-        document.getElementById('reportModal').style.display = 'block';
+        console.error('Error loading user data:', error);
+        showNotification('Error loading user data', 'error');
     }
 }
 
@@ -371,11 +433,12 @@ function setupStreamButtons() {
             streamStats.isFollowing = !streamStats.isFollowing;
             if (streamStats.isFollowing) {
                 streamStats.followers += 1;
-                showNotification('Thanks for following!');
+                showNotification('Thanks for following! You will now receive notifications when we go live.', 'success');
                 followBtn.innerHTML = '<i class="fas fa-heart"></i> Following';
                 followBtn.style.background = '#2d2d2d';
             } else {
                 streamStats.followers -= 1;
+                showNotification('You have unfollowed the channel', 'info');
                 followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
                 followBtn.style.background = '#3a3a3d';
             }
@@ -388,11 +451,11 @@ function setupStreamButtons() {
             if (!streamStats.isSubscribed) {
                 streamStats.subscribers += 1;
                 streamStats.isSubscribed = true;
-                showNotification('Thanks for subscribing! ');
+                showNotification('Thanks for subscribing! ', 'success');
                 subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribed';
                 updateStreamStats();
             } else {
-                showNotification('You are already subscribed!');
+                showNotification('You are already subscribed!', 'info');
             }
         });
     }

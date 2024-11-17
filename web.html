@@ -115,10 +115,13 @@
                 <div class="chat-section">
                     <div class="chat-messages" id="chatMessages">
                         <div class="chat-message">
-                            <div class="message-header">
-                                <span class="username">User123</span>
+                            <img src="https://static-cdn.jtvnw.net/user-default-pictures-uv/13e5fa74-defa-11e9-809c-784f43822e80-profile_image-70x70.png" class="chat-avatar" alt="User avatar">
+                            <div class="message-content-wrapper">
+                                <div class="message-header">
+                                    <span class="username">User123</span>
+                                </div>
+                                <div class="message-content">Hello everyone!</div>
                             </div>
-                            <div class="message-content">Hello everyone!</div>
                         </div>
                     </div>
                     <form id="commentForm">
@@ -166,21 +169,22 @@
         </div>
     </div>
 
-    <!-- Modal do zgłaszania użytkownika -->
+    <!-- Report Modal -->
     <div id="reportModal" class="modal">
         <div class="modal-content">
-            <div class="report-header">
-                <img id="reportAvatar" class="report-avatar" alt="User avatar">
-                <h2 id="reportUsername"></h2>
-            </div>
-            <div class="recent-comments">
-                <h3>Ostatnie komentarze:</h3>
-                <div id="reportUserComments" class="comments-list"></div>
-            </div>
-            <p>Czy na pewno chcesz zgłosić tego użytkownika?</p>
-            <div class="modal-buttons">
-                <button id="reportButton" onclick="reportUser(document.getElementById('reportUsername').innerText.replace('Zgłoś użytkownika: ', ''))">Zgłoś</button>
-                <button onclick="closeReportModal()">Anuluj</button>
+            <div class="report-preview">
+                <div class="message-header">
+                    <img src="" class="chat-avatar" alt="User avatar">
+                    <span class="username" id="reportUsername"></span>
+                    <button class="close-preview"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="recent-messages">
+                    <h3>Last Comments:</h3>
+                    <div id="reportUserComments"></div>
+                </div>
+                <div class="report-actions">
+                    <button class="report-submit">Zgłoś</button>
+                </div>
             </div>
         </div>
     </div>
