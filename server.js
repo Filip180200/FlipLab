@@ -68,7 +68,6 @@ const initializeDatabase = async () => {
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
-                avatar_url TEXT,
                 comment TEXT NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
@@ -119,7 +118,7 @@ const getComments = async (req, res, next) => {
             (SELECT id, username, avatar_url, comment, timestamp, 'simulated' as type, delay
             FROM simulated_comments)
             UNION ALL
-            (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type, 0 as delay
+            (SELECT id, username, NULL as avatar_url, comment, timestamp, 'normal' as type, 0 as delay
             FROM comments)
             ORDER BY timestamp DESC
         `;
@@ -138,7 +137,7 @@ const getNewComments = async (req, res, next) => {
             FROM simulated_comments
             WHERE timestamp > $1)
             UNION ALL
-            (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type, 0 as delay
+            (SELECT id, username, NULL as avatar_url, comment, timestamp, 'normal' as type, 0 as delay
             FROM comments
             WHERE timestamp > $1)
             ORDER BY timestamp DESC
@@ -152,14 +151,14 @@ const getNewComments = async (req, res, next) => {
 
 const addComment = async (req, res, next) => {
     try {
-        const { username, comment, avatar_url } = req.body;
+        const { username, comment } = req.body;
 
         if (!username || !comment) {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO comments (username, avatar_url, comment) VALUES ($1, $2, $3)';
-        await executeQuery(query, [username, avatar_url, comment]);
+        const query = 'INSERT INTO comments (username, comment) VALUES ($1, $2)';
+        await executeQuery(query, [username, comment]);
         res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
         next(err);
@@ -170,7 +169,7 @@ const getLastThreeComments = async (req, res, next) => {
     try {
         const { username } = req.params;
         const query = `
-            (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type
+            (SELECT id, username, NULL as avatar_url, comment, timestamp, 'normal' as type
             FROM comments
             WHERE username = $1)
             UNION ALL
