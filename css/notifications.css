@@ -6,8 +6,8 @@
     top: 20px;
     right: 20px;
     padding: 12px 24px;
-    background: #1a1a1a;
-    color: #efeff1;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
     border-radius: 4px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     z-index: 1000;
@@ -17,7 +17,7 @@
     transform: translateX(120%);
     transition: transform 0.3s ease-out;
     min-width: 300px;
-    border-left: 4px solid #9147ff;
+    border-left: 4px solid var(--accent-primary);
 }
 
 .notification.success {
@@ -29,11 +29,11 @@
 }
 
 .notification.info {
-    border-left-color: #9147ff;
+    border-left-color: var(--accent-primary);
 }
 
 .notification.info .notification-icon {
-    color: #9147ff;
+    color: var(--accent-primary);
 }
 
 .notification.show {
@@ -53,19 +53,19 @@
 .notification-close {
     background: none;
     border: none;
-    color: #adadb8;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
-    font-size: 16px;
-    margin-left: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
 .notification-close:hover {
-    color: #efeff1;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Modal Styles */
@@ -103,6 +103,5 @@
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
-    display: none;
     z-index: 1000;
 }

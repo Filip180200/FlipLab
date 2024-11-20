@@ -1,13 +1,23 @@
 /* ==========================================================================
    Base & Reset Styles
    ========================================================================== */
+:root {
+    --bg-primary: #181818;
+    --bg-secondary: #242424;
+    --bg-dark: #0e0e10;
+    --text-primary: #efeff1;
+    --text-secondary: #adadb8;
+    --accent-primary: #9147ff;
+    --accent-hover: #7f2cff;
+}
+
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #181818;
-    color: white;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     overflow: hidden;
 }
 
@@ -16,7 +26,7 @@ html, body {
     margin: 0;
     padding: 0;
     scrollbar-width: thin;
-    scrollbar-color: #9147ff rgba(255, 255, 255, 0.1);
+    scrollbar-color: var(--accent-primary) rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -35,17 +45,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #9147ff;
+    background: var(--accent-primary);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #7f2cff;
+    background: var(--accent-hover);
 }
 
 /* Site Header */
 .site-header {
-    background-color: #181818;
+    background-color: var(--bg-primary);
     padding: 10px 20px;
     border-bottom: 1px solid #333;
 }
@@ -66,10 +76,10 @@ button:hover {
 /* Viewer Count */
 .viewer-count {
     font-size: 1.2rem;
-    color: #fff;
+    color: var(--text-primary);
     text-align: center;
     padding: 10px;
-    background-color: #333;
+    background-color: var(--bg-secondary);
     border-radius: 5px;
     margin-top: 10px;
 }

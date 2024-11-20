@@ -14,8 +14,8 @@ let streamStartTime = new Date();
 // Cache dla komentarzy użytkowników
 const userCommentsCache = new Map();
 
-// Set to store reported users
-const reportedUsers = new Set();
+// Set to store reported users with reporter information
+const reportedUsersMap = new Map(); // Map of username -> Set of reporters
 
 // Mock data for testing
 const mockUserComments = {
@@ -69,24 +69,7 @@ function formatNumber(num) {
 }
 
 function showNotification(message, type = 'info') {
-    // Browser notification
-    if (Notification.permission === "granted") {
-        new Notification("FlipLab", {
-            body: message,
-            icon: '/assets/favicon.ico'
-        });
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification("FlipLab", {
-                    body: message,
-                    icon: '/assets/favicon.ico'
-                });
-            }
-        });
-    }
-
-    // In-app notification
+    // In-app notification only
     const notification = document.createElement('div');
     notification.className = `notification ${type} show`;
     
@@ -105,6 +88,10 @@ function showNotification(message, type = 'info') {
     notification.appendChild(icon);
     notification.appendChild(messageText);
     notification.appendChild(closeBtn);
+    
+    // Remove existing notifications of the same type
+    const existingNotifications = document.querySelectorAll(`.notification.${type}`);
+    existingNotifications.forEach(n => n.remove());
     
     document.body.appendChild(notification);
     
@@ -200,20 +187,22 @@ function addSingleComment(comment, scrollToBottom = true) {
 function createCommentElement(comment) {
     const commentElement = document.createElement('div');
     commentElement.classList.add('chat-message');
-    commentElement.dataset.commentId = comment.id;
 
-    // Avatar
+    // Check if this user is reported by the current user
+    const currentUser = localStorage.getItem('username') || 'Anonymous';
+    if (reportedUsersMap.has(comment.username) && reportedUsersMap.get(comment.username).has(currentUser)) {
+        commentElement.classList.add('reported');
+    }
+
     const avatar = document.createElement('img');
     avatar.src = comment.avatar_url || DEFAULT_AVATAR;
     avatar.className = 'chat-avatar';
     avatar.alt = `${comment.username}'s avatar`;
     avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
-    // Message content wrapper
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'message-content-wrapper';
 
-    // Message header
     const header = document.createElement('div');
     header.className = 'message-header';
 
@@ -222,78 +211,106 @@ function createCommentElement(comment) {
     username.textContent = comment.username;
     username.onclick = () => openReportModal(comment.username);
 
-    // Message content
     const content = document.createElement('div');
     content.className = 'message-content';
     content.textContent = comment.comment;
 
-    // Assemble the elements
     header.appendChild(username);
     contentWrapper.appendChild(header);
     contentWrapper.appendChild(content);
-
     commentElement.appendChild(avatar);
     commentElement.appendChild(contentWrapper);
 
     return commentElement;
 }
 
-function createAvatarElement(comment) {
-    const container = document.createElement('div');
-    container.classList.add('avatar-container');
-    
-    const img = document.createElement('img');
-    img.classList.add('avatar');
-    img.src = comment.avatar_url || DEFAULT_AVATAR;
-    img.alt = `${comment.username}'s avatar`;
-    img.onerror = () => img.src = DEFAULT_AVATAR;
-    
-    container.appendChild(img);
-    return container;
-}
-
-function createTextContainer(comment) {
-    const container = document.createElement('div');
-    container.classList.add('text-container');
-
-    const messageText = document.createElement('p');
-    messageText.classList.add('message');
-    if (reportedUsers.has(comment.username)) {
-        messageText.classList.add('reported-message');
-    }
-    messageText.innerHTML = `<span class="username" style="cursor: pointer;">${comment.username}</span>: ${comment.comment}`.replace('> :', '>:');
-    
-    const usernameSpan = messageText.querySelector('.username');
-    usernameSpan.addEventListener('click', () => openReportModal(comment.username));
-
-    container.appendChild(messageText);
-    return container;
-}
-
 // Funkcje raportu użytkownika
+async function reportUser(username) {
+    try {
+        const reportingUsername = localStorage.getItem('username') || 'Anonymous';
+        
+        // Check if current user has already reported this user
+        if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(reportingUsername)) {
+            return false;
+        }
+
+        // Add to reportedUsersMap first
+        if (!reportedUsersMap.has(username)) {
+            reportedUsersMap.set(username, new Set());
+        }
+        reportedUsersMap.get(username).add(reportingUsername);
+
+        // Mark user's messages as reported
+        const userMessages = document.querySelectorAll('.chat-message');
+        userMessages.forEach(message => {
+            const messageUsername = message.querySelector('.username').textContent;
+            if (messageUsername === username) {
+                message.classList.add('reported');
+            }
+        });
+
+        // Send report to server
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reportedUsername: username,
+                reportingUsername: reportingUsername,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            // If server request fails, rollback the local changes
+            reportedUsersMap.get(username).delete(reportingUsername);
+            if (reportedUsersMap.get(username).size === 0) {
+                reportedUsersMap.delete(username);
+            }
+            userMessages.forEach(message => {
+                const messageUsername = message.querySelector('.username').textContent;
+                if (messageUsername === username) {
+                    message.classList.remove('reported');
+                }
+            });
+            throw new Error('Failed to submit report');
+        }
+
+        // Show success notification
+        showNotification(`${username} successfully reported`, 'success');
+        return true;
+
+    } catch (error) {
+        console.error('Error reporting user:', error);
+        showNotification('Failed to report user', 'error');
+        return false;
+    }
+}
+
 async function openReportModal(username) {
     try {
-        // Get the user's avatar from their comments
+        const currentUser = localStorage.getItem('username') || 'Anonymous';
+        
+        // Check if already reported before opening modal
+        if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(currentUser)) {
+            showNotification(`${username} is already reported`, 'warning');
+            return;
+        }
+
         const userComments = document.querySelectorAll('.chat-message');
         let userAvatar = DEFAULT_AVATAR;
-        let recentComments = [];
+        let recentComments = new Set();
         
-        // Collect comments and avatar for the user
         userComments.forEach(commentEl => {
             const commentUsername = commentEl.querySelector('.username').textContent;
             if (commentUsername === username) {
-                // Get avatar if we haven't found it yet
                 if (userAvatar === DEFAULT_AVATAR) {
                     const avatarImg = commentEl.querySelector('.chat-avatar');
                     userAvatar = avatarImg ? avatarImg.src : DEFAULT_AVATAR;
                 }
-                
-                // Get comment text
                 const commentText = commentEl.querySelector('.message-content').textContent;
-                recentComments.push({
-                    comment: commentText,
-                    timestamp: new Date().toISOString()
-                });
+                recentComments.add(commentText);
             }
         });
         
@@ -305,16 +322,14 @@ async function openReportModal(username) {
         reportUsername.textContent = username;
         avatar.src = userAvatar;
         avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
-
-        // Clear previous comments
         commentsList.innerHTML = '';
         
-        // Add recent comments in reverse chronological order
-        if (recentComments.length > 0) {
-            recentComments.slice(-3).forEach(comment => {
+        const uniqueComments = Array.from(recentComments).slice(-3);
+        if (uniqueComments.length > 0) {
+            uniqueComments.forEach(comment => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = 'message';
-                messageDiv.textContent = comment.comment;
+                messageDiv.textContent = comment;
                 commentsList.appendChild(messageDiv);
             });
         } else {
@@ -324,19 +339,19 @@ async function openReportModal(username) {
             commentsList.appendChild(noCommentsDiv);
         }
         
-        // Setup event handlers
         const closeButton = reportModal.querySelector('.close-preview');
         const submitButton = reportModal.querySelector('.report-submit');
         const overlay = document.querySelector('.report-overlay');
         
         closeButton.onclick = closeReportModal;
-        submitButton.onclick = () => {
-            reportUser(username);
-            closeReportModal();
+        submitButton.onclick = async () => {
+            const success = await reportUser(username);
+            if (success) {
+                closeReportModal();
+            }
         };
         overlay.onclick = closeReportModal;
         
-        // Show modal and overlay
         reportModal.classList.add('active');
         overlay.classList.add('active');
     } catch (error) {
@@ -350,45 +365,6 @@ function closeReportModal() {
     const overlay = document.querySelector('.report-overlay');
     reportModal.classList.remove('active');
     overlay.classList.remove('active');
-}
-
-async function reportUser(username) {
-    try {
-        // Get the current user (you might want to replace this with actual logged-in user)
-        const reportingUsername = "Current User";
-        
-        // Send report to server
-        const response = await fetch('/api/report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                reportedUsername: username,
-                reportingUsername: reportingUsername
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to submit report');
-        }
-
-        // Show success notification
-        showNotification(`User ${username} has been reported`, 'success');
-        
-        // Mark user's messages as reported
-        const userMessages = document.querySelectorAll('.chat-message');
-        userMessages.forEach(message => {
-            const messageUsername = message.querySelector('.username').textContent;
-            if (messageUsername === username) {
-                message.classList.add('reported-message');
-            }
-        });
-
-    } catch (error) {
-        console.error('Error reporting user:', error);
-        showNotification('Failed to report user', 'error');
-    }
 }
 
 // Funkcje komentarzy użytkownika
@@ -528,10 +504,124 @@ function setupChannelInteractions() {
             const subscribeBtn = document.querySelector('.subscribe-btn');
             followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
             followBtn.style.background = '#3a3a3d';
-            subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribe';
+            followBtn.classList.remove('following');
+            subscribeBtn.innerHTML = '<i class="far fa-star"></i> Subscribe';
+            subscribeBtn.style.background = '#3a3a3d';
+            subscribeBtn.classList.remove('subscribed');
         });
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    startCountdown();
+
+    // Settings button notification
+    const settingsButton = document.querySelector('.settings-btn');
+    if (settingsButton) {
+        settingsButton.addEventListener('click', () => {
+            showNotification('Settings will be available in a future update!', 'info');
+        });
+    }
+
+    // Handle clicks for reporting
+    document.addEventListener('click', function(e) {
+        const reportModal = document.getElementById('reportModal');
+        const reportOverlay = document.querySelector('.report-overlay');
+
+        // Handle username clicks
+        if (e.target.classList.contains('username')) {
+            const messageEl = e.target.closest('.chat-message');
+            const username = messageEl.querySelector('.username').textContent;
+            const avatar = messageEl.querySelector('.chat-avatar').src;
+            openReportModal(username, avatar);
+        }
+
+        // Handle report button clicks
+        if (e.target.closest('.report-btn')) {
+            const messageEl = e.target.closest('.chat-message');
+            const username = messageEl.querySelector('.username').textContent;
+            const avatar = messageEl.querySelector('.chat-avatar').src;
+            openReportModal(username, avatar);
+        }
+
+        // Close on overlay click
+        if (e.target.classList.contains('report-overlay')) {
+            closeReportModal();
+        }
+
+        // Close on close button click
+        if (e.target.closest('.close-preview')) {
+            closeReportModal();
+        }
+
+        // Handle report submit
+        if (e.target.closest('.report-submit')) {
+            const username = reportModal.querySelector('#reportUsername').textContent;
+            reportUser(username);
+        }
+    });
+
+    // Handle comment form
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', addComment);
+    }
+
+    // Initialize app
+    initializeApp();
+});
+
+// Inicjalizacja
+async function initializeApp() {
+    console.log('Initializing app...');
+    
+    // Start real-time comments
+    startRealTimeComments();
+    
+    // Setup channel interactions
+    setupChannelInteractions();
+    
+    // Load initial comments
+    loadComments(true);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const subscribeBtn = document.querySelector('.subscribe-btn');
+    if (subscribeBtn) {
+        let isSubscribed = false;
+        subscribeBtn.addEventListener('click', function() {
+            isSubscribed = !isSubscribed;
+            if (isSubscribed) {
+                this.innerHTML = '<i class="fas fa-star"></i> Subscribed';
+                this.style.background = '#9147ff';  // Purple color when subscribed
+                showNotification('Thanks for subscribing!', 'success');
+            } else {
+                this.innerHTML = '<i class="far fa-star"></i> Subscribe';
+                this.style.background = '#3a3a3d';  // Default color
+                showNotification('Subscription cancelled', 'info');
+            }
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const followBtn = document.querySelector('.follow-btn');
+    if (followBtn) {
+        let isFollowing = false;
+        followBtn.addEventListener('click', function() {
+            isFollowing = !isFollowing;
+            if (isFollowing) {
+                this.innerHTML = '<i class="fas fa-heart-broken"></i> Unfollow';
+                this.style.background = '#f00';  // Red color when following
+                showNotification('Thanks for following! You will now receive notifications when we go live.', 'success');
+            } else {
+                this.innerHTML = '<i class="fas fa-heart"></i> Follow';
+                this.style.background = '#3a3a3d';  // Default color
+                showNotification('You have unfollowed the channel', 'info');
+            }
+        });
+    }
+});
 
 // Timer functionality
 let sessionTime = 15 * 60; // 15 minutes in seconds
@@ -555,59 +645,3 @@ function startCountdown() {
         countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }, 1000);
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    startCountdown();
-
-    // Handle comment form
-    document.getElementById('commentForm').addEventListener('submit', addComment);
-
-    // Initialize the app
-    initializeApp();
-});
-
-// Inicjalizacja
-async function initializeApp() {
-    console.log('Initializing app...');
-    
-    // Start real-time comments
-    startRealTimeComments();
-    
-    // Setup channel interactions
-    setupChannelInteractions();
-    
-    // Load initial comments
-    loadComments(true);
-}
-
-// Add event listener for the close button
-document.querySelector('.close-preview').addEventListener('click', closeReportModal);
-
-// Add event listener for report submit button
-document.querySelector('.report-submit').addEventListener('click', function() {
-    const username = document.getElementById('reportUsername').textContent;
-    reportUser(username);
-    closeReportModal();
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const closeBtn = document.querySelector('.close-preview');
-    const reportBtn = document.querySelector('.report-submit');
-    const reportOverlay = document.querySelector('.report-overlay');
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeReportModal);
-    }
-
-    if (reportBtn) {
-        reportBtn.addEventListener('click', function() {
-            const username = document.querySelector('.preview-username').textContent;
-            reportUser(username);
-            closeReportModal();
-        });
-    }
-
-    if (reportOverlay) {
-        reportOverlay.addEventListener('click', closeReportModal);
-    }
-});
