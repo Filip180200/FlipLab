@@ -341,15 +341,9 @@ async function reportUser(username) {
             return;
         }
 
-        const response = await fetch('/api/report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                reportedUsername: username,
-                reportingUsername: reportingUsername
-            })
+        const response = await postData('/api/report', {
+            reportedUsername: username,
+            reportingUsername: reportingUsername
         });
 
         if (!response.ok) {
@@ -389,16 +383,19 @@ async function addComment(event) {
             comment: comment
         });
 
-        // Add comment to cache
-        addCommentToCache(nickname, comment);
-
-        // Create and display the comment immediately
+        // Create the comment object
         const commentObj = {
             id: Date.now(),  // Temporary ID
             username: nickname,
             comment: comment,
             timestamp: new Date().toISOString()
         };
+
+        // Add comment to cache only once
+        addCommentToCache(nickname, {
+            comment: comment,
+            timestamp: commentObj.timestamp
+        });
         
         // Clear input before adding comment to prevent double-posting
         commentInput.value = '';
