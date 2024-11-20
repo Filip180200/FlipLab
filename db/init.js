@@ -49,7 +49,8 @@ const initializeDatabaseTables = async () => {
                 age INTEGER NOT NULL,
                 gender VARCHAR(50) NOT NULL,
                 terms_accepted BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                time_left INTEGER DEFAULT 3600
             )
         `);
 

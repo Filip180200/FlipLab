@@ -144,19 +144,16 @@ const addComment = async (req, res, next) => {
 const getUserData = async (req, res, next) => {
     try {
         const { username } = req.params;
-        const query = `
-            SELECT DISTINCT username, avatar_url
-            FROM (
-                SELECT username, avatar_url FROM comments
-                UNION
-                SELECT username, avatar_url FROM simulated_comments
-            ) combined
-            WHERE username = $1
-            LIMIT 1
-        `;
+        const result = await executeQuery(
+            'SELECT username, first_name, last_name, age, gender, time_left FROM users WHERE username = $1',
+            [username]
+        );
         
-        const userData = await executeQuery(query, [username]);
-        res.json(userData[0] || { username });
+        if (result.length > 0) {
+            res.json(result[0]);
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
     } catch (err) {
         next(err);
     }
@@ -210,6 +207,43 @@ const addSimulatedComment = async (req, res, next) => {
     }
 };
 
+// Get user's time left
+app.get('/api/time-left/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT time_left FROM users WHERE username = $1',
+            [username]
+        );
+        
+        if (result.length > 0) {
+            res.json({ timeLeft: result[0].time_left });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error getting time:', error);
+        res.status(500).json({ error: 'Failed to get time' });
+    }
+});
+
+// Update user's time left
+app.post('/api/update-time', async (req, res) => {
+    try {
+        const { username, timeLeft } = req.body;
+        
+        await executeQuery(
+            'UPDATE users SET time_left = $1 WHERE username = $2',
+            [timeLeft, username]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating time:', error);
+        res.status(500).json({ error: 'Failed to update time' });
+    }
+});
+
 // Register new user
 app.post('/api/register', async (req, res) => {
     try {
@@ -236,9 +270,9 @@ app.post('/api/register', async (req, res) => {
 
         // Insert new user
         await executeQuery(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted]
+            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 300]
         );
 
         res.json({ username: `${formattedFirstName} ${formattedLastName}` });

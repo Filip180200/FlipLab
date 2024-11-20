@@ -513,8 +513,6 @@ function setupChannelInteractions() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    startCountdown();
-
     // Settings button notification
     const settingsButton = document.querySelector('.settings-btn');
     if (settingsButton) {
@@ -624,20 +622,39 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Timer functionality
-let sessionTime = 15 * 60; // 15 minutes in seconds
+let sessionTime = 300; // 5 minutes in seconds
 const countdownElement = document.getElementById('countdown');
+const username = localStorage.getItem('username');
 
 // Start countdown timer
-function startCountdown() {
+async function startCountdown() {
     const endTime = Date.now() + (sessionTime * 1000);
     
-    const timer = setInterval(() => {
+    const timer = setInterval(async () => {
         const now = Date.now();
         const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
         
+        // Sync with server every 30 seconds
+        if (timeLeft % 30 === 0 && timeLeft > 0) {
+            try {
+                await fetch('/api/update-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        timeLeft
+                    })
+                });
+            } catch (error) {
+                console.error('Error syncing time:', error);
+            }
+        }
+        
         if (timeLeft === 0) {
             clearInterval(timer);
-            window.location.href = '/thank-you.html';
+            window.location.href = '/';
         }
         
         const minutes = Math.floor(timeLeft / 60);
@@ -645,3 +662,20 @@ function startCountdown() {
         countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }, 1000);
 }
+
+// Load initial time from server
+async function loadInitialTime() {
+    try {
+        const response = await fetch(`/api/time-left/${username}`);
+        const data = await response.json();
+        sessionTime = data.timeLeft;
+        startCountdown();
+    } catch (error) {
+        console.error('Error loading time:', error);
+        // Fallback to default time if server request fails
+        startCountdown();
+    }
+}
+
+// Initialize timer when page loads
+window.addEventListener('load', loadInitialTime);
