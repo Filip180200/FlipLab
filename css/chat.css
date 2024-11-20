@@ -64,16 +64,16 @@
 }
 
 /* Reported message styles */
-.reported-message {
+.chat-message.reported {
     opacity: 0.6;
 }
 
-.reported-message .username,
-.reported-message .message-content {
+.chat-message.reported .username,
+.chat-message.reported .message-content {
     color: #808080;
 }
 
-.reported-message:hover {
+.chat-message.reported:hover {
     background: rgba(255, 255, 255, 0.02);
 }
 

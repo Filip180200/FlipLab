@@ -218,40 +218,10 @@ function createCommentElement(comment) {
     header.appendChild(username);
     contentWrapper.appendChild(header);
     contentWrapper.appendChild(content);
-
     commentElement.appendChild(avatar);
     commentElement.appendChild(contentWrapper);
 
     return commentElement;
-}
-
-function createAvatarElement(comment) {
-    const container = document.createElement('div');
-    container.classList.add('avatar-container');
-    
-    const img = document.createElement('img');
-    img.classList.add('avatar');
-    img.src = comment.avatar_url || DEFAULT_AVATAR;
-    img.alt = `${comment.username}'s avatar`;
-    img.onerror = () => img.src = DEFAULT_AVATAR;
-    
-    container.appendChild(img);
-    return container;
-}
-
-function createTextContainer(comment) {
-    const container = document.createElement('div');
-    container.classList.add('text-container');
-
-    const messageText = document.createElement('p');
-    messageText.classList.add('message');
-    messageText.innerHTML = `<span class="username" style="cursor: pointer;">${comment.username}</span>: ${comment.comment}`.replace('> :', '>:');
-    
-    const usernameSpan = messageText.querySelector('.username');
-    usernameSpan.addEventListener('click', () => openReportModal(comment.username));
-
-    container.appendChild(messageText);
-    return container;
 }
 
 // Funkcje raportu użytkownika
