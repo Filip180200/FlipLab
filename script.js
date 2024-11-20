@@ -14,8 +14,8 @@ let streamStartTime = new Date();
 // Cache dla komentarzy użytkowników
 const userCommentsCache = new Map();
 
-// Set to store reported users
-const reportedUsers = new Set();
+// Set to store reported users with reporter information
+const reportedUsersMap = new Map(); // Map of username -> Set of reporters
 
 // Mock data for testing
 const mockUserComments = {
@@ -245,8 +245,8 @@ function createTextContainer(comment) {
 
     const messageText = document.createElement('p');
     messageText.classList.add('message');
-    if (reportedUsers.has(comment.username)) {
-        messageText.classList.add('reported-message');
+    if (reportedUsersMap.has(comment.username) && reportedUsersMap.get(comment.username).has(localStorage.getItem('username') || 'Anonymous')) {
+        messageText.classList.add('reported-message-' + (localStorage.getItem('username') || 'Anonymous').replace(/[^a-zA-Z0-9]/g, '-'));
     }
     messageText.innerHTML = `<span class="username" style="cursor: pointer;">${comment.username}</span>: ${comment.comment}`.replace('> :', '>:');
     
@@ -260,9 +260,10 @@ function createTextContainer(comment) {
 // Funkcje raportu użytkownika
 async function openReportModal(username) {
     try {
-        // Check if user is already reported before opening modal
-        if (reportedUsers.has(username)) {
-            showNotification(`User ${username} has already been reported`, 'warning');
+        const currentUser = localStorage.getItem('username') || 'Anonymous';
+        // Check if current user has already reported this user
+        if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(currentUser)) {
+            showNotification(`You have already reported ${username}`, 'warning');
             return;
         }
 
@@ -337,8 +338,11 @@ async function reportUser(username) {
     try {
         const reportingUsername = localStorage.getItem('username') || 'Anonymous';
         
-        // Add to reported users set before API call
-        reportedUsers.add(username);
+        // Check if current user has already reported this user
+        if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(reportingUsername)) {
+            showNotification(`You have already reported ${username}`, 'warning');
+            return;
+        }
 
         const response = await fetch('/api/report', {
             method: 'POST',
@@ -353,21 +357,26 @@ async function reportUser(username) {
         });
 
         if (!response.ok) {
-            reportedUsers.delete(username);
             throw new Error('Failed to submit report');
         }
 
-        // Mark user's messages as reported
+        // Add to reportedUsersMap
+        if (!reportedUsersMap.has(username)) {
+            reportedUsersMap.set(username, new Set());
+        }
+        reportedUsersMap.get(username).add(reportingUsername);
+
+        // Mark user's messages as reported only for the current user
         const userMessages = document.querySelectorAll('.chat-message');
         userMessages.forEach(message => {
             const messageUsername = message.querySelector('.username').textContent;
             if (messageUsername === username) {
-                message.classList.add('reported-message');
+                message.classList.add('reported-message-' + reportingUsername.replace(/[^a-zA-Z0-9]/g, '-'));
             }
         });
 
         // Show success notification
-        showNotification(`User ${username} has been reported`, 'success');
+        showNotification(`You have reported ${username}`, 'success');
 
     } catch (error) {
         console.error('Error reporting user:', error);
