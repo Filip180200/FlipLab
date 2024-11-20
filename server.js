@@ -53,9 +53,48 @@ const errorHandler = (err, req, res, next) => {
 const connectToDatabase = async () => {
     try {
         await pool.connect();
-        console.log('Connected to PostgreSQL database');
+        console.log('Connected to database successfully');
     } catch (err) {
-        console.error('Database connection error:', err.stack);
+        console.error('Error connecting to database:', err.stack);
+        process.exit(1);
+    }
+};
+
+// Database initialization
+const initializeDatabase = async () => {
+    try {
+        // Create tables if they don't exist
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS simulated_comments (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url TEXT,
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                delay INTEGER DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                first_name VARCHAR(255),
+                last_name VARCHAR(255),
+                age INTEGER,
+                gender VARCHAR(50),
+                time_left INTEGER DEFAULT 3600,
+                terms_accepted BOOLEAN DEFAULT false
+            );
+        `);
+        console.log('Database tables initialized successfully');
+    } catch (err) {
+        console.error('Error initializing database tables:', err);
         process.exit(1);
     }
 };
@@ -74,10 +113,30 @@ const executeQuery = async (query, params = []) => {
 // Route handlers
 const getComments = async (req, res, next) => {
     try {
-        // Only get simulated comments
+        // Get both simulated and real comments
         const query = `
-            SELECT id, username, avatar_url, comment, timestamp, delay
-            FROM simulated_comments
+            WITH ranked_comments AS (
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    delay,
+                    avatar_url
+                FROM simulated_comments
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'normal' as type,
+                    0 as delay,
+                    NULL as avatar_url
+                FROM comments
+            )
+            SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query);
@@ -91,9 +150,30 @@ const getNewComments = async (req, res, next) => {
     try {
         const { lastTimestamp } = req.query;
         const query = `
-            SELECT id, username, avatar_url, comment, timestamp
-            FROM comments
-            WHERE timestamp > $1
+            WITH ranked_comments AS (
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    delay,
+                    avatar_url
+                FROM simulated_comments
+                WHERE timestamp > $1
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'normal' as type,
+                    0 as delay,
+                    NULL as avatar_url
+                FROM comments
+                WHERE timestamp > $1
+            )
+            SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query, [lastTimestamp || new Date().toISOString()]);
@@ -103,17 +183,58 @@ const getNewComments = async (req, res, next) => {
     }
 };
 
+const addComment = async (req, res, next) => {
+    try {
+        const { username, comment } = req.body;
+
+        if (!username || !comment) {
+            return res.status(400).json({ error: 'Username and comment are required' });
+        }
+
+        // Check for duplicate comment in the last 5 seconds
+        const recentComments = await executeQuery(
+            'SELECT id FROM comments WHERE username = $1 AND comment = $2 AND timestamp > NOW() - INTERVAL \'5 seconds\'',
+            [username, comment]
+        );
+
+        if (recentComments.length > 0) {
+            return res.status(400).json({ error: 'Please wait before posting the same comment again' });
+        }
+
+        const query = 'INSERT INTO comments (username, comment) VALUES ($1, $2)';
+        await executeQuery(query, [username, comment]);
+        res.status(201).json({ message: 'Comment added successfully' });
+    } catch (err) {
+        next(err);
+    }
+};
+
 const getLastThreeComments = async (req, res, next) => {
     try {
         const { username } = req.params;
         const query = `
-            (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type
-            FROM comments
-            WHERE username = $1)
-            UNION ALL
-            (SELECT id, username, avatar_url, comment, timestamp, 'simulated' as type
-            FROM simulated_comments
-            WHERE username = $1)
+            WITH ranked_comments AS (
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'normal' as type,
+                    NULL as avatar_url
+                FROM comments
+                WHERE username = $1
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    avatar_url
+                FROM simulated_comments
+                WHERE username = $1
+            )
+            SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
             LIMIT 3
         `;
@@ -125,38 +246,19 @@ const getLastThreeComments = async (req, res, next) => {
     }
 };
 
-const addComment = async (req, res, next) => {
-    try {
-        const { username, comment, avatar_url } = req.body;
-
-        if (!username || !comment) {
-            return res.status(400).json({ error: 'Username and comment are required' });
-        }
-
-        const query = 'INSERT INTO comments (username, avatar_url, comment) VALUES ($1, $2, $3)';
-        await executeQuery(query, [username, avatar_url, comment]);
-        res.status(201).json({ message: 'Comment added successfully' });
-    } catch (err) {
-        next(err);
-    }
-};
-
 const getUserData = async (req, res, next) => {
     try {
         const { username } = req.params;
-        const query = `
-            SELECT DISTINCT username, avatar_url
-            FROM (
-                SELECT username, avatar_url FROM comments
-                UNION
-                SELECT username, avatar_url FROM simulated_comments
-            ) combined
-            WHERE username = $1
-            LIMIT 1
-        `;
+        const result = await executeQuery(
+            'SELECT username, first_name, last_name, age, gender, time_left FROM users WHERE username = $1',
+            [username]
+        );
         
-        const userData = await executeQuery(query, [username]);
-        res.json(userData[0] || { username });
+        if (result.length > 0) {
+            res.json(result[0]);
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
     } catch (err) {
         next(err);
     }
@@ -210,57 +312,131 @@ const addSimulatedComment = async (req, res, next) => {
     }
 };
 
-// Initialize database tables
-async function initializeDatabase() {
+// Get user's time left
+app.get('/api/time-left/:username', async (req, res) => {
     try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                first_name VARCHAR(255) NOT NULL,
-                last_name VARCHAR(255) NOT NULL,
-                age INTEGER NOT NULL CHECK (age >= 13),
-                gender VARCHAR(50) NOT NULL,
-                terms_accepted BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        console.log('Database tables initialized');
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT time_left FROM users WHERE username = $1',
+            [username]
+        );
+        
+        if (result.length > 0) {
+            res.json({ timeLeft: result[0].time_left });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
     } catch (error) {
-        console.error('Error initializing database:', error);
+        console.error('Error getting time:', error);
+        res.status(500).json({ error: 'Failed to get time' });
     }
-}
+});
+
+// Update user's time left
+app.post('/api/update-time', async (req, res) => {
+    try {
+        const { username, timeLeft } = req.body;
+        
+        if (timeLeft < 0) {
+            return res.status(400).json({ error: 'Time left cannot be negative' });
+        }
+
+        const result = await executeQuery(
+            'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
+            [Math.max(0, timeLeft), username]
+        );
+        
+        if (result.length > 0) {
+            // If the update was successful, return the updated time
+            res.json({ timeLeft: result[0].time_left });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error updating time:', error);
+        res.status(500).json({ error: 'Failed to update time' });
+    }
+});
+
+// Update user's time left (beacon endpoint)
+app.post('/api/update-time/beacon', async (req, res) => {
+    try {
+        let data;
+        // Handle different types of request bodies
+        if (typeof req.body === 'string') {
+            try {
+                data = JSON.parse(req.body);
+            } catch (e) {
+                console.error('Error parsing beacon data:', e);
+                return res.status(400).end();
+            }
+        } else {
+            data = req.body;
+        }
+
+        // Validate the data
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid beacon data format:', data);
+            return res.status(400).end();
+        }
+
+        const { username, timeLeft } = data;
+        
+        if (!username || timeLeft === undefined) {
+            console.error('Missing required beacon data fields:', data);
+            return res.status(400).end();
+        }
+
+        // Ensure timeLeft is a number and not negative
+        const validTimeLeft = Math.max(0, parseInt(timeLeft, 10) || 0);
+
+        await executeQuery(
+            'UPDATE users SET time_left = $1 WHERE username = $2',
+            [validTimeLeft, username]
+        );
+        
+        res.status(200).end();
+    } catch (error) {
+        console.error('Error handling beacon time update:', error);
+        res.status(500).end();
+    }
+});
 
 // Register new user
 app.post('/api/register', async (req, res) => {
     try {
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
         
+        // Validate age
+        if (age < 18) {
+            return res.status(400).json({ error: 'You must be at least 18 years old to register' });
+        }
+
         // Capitalize first letter of each name and make the rest lowercase
         const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
         const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
         
-        // Generate username (FirstName LastName)
-        const username = `${formattedFirstName} ${formattedLastName}`;
-            
-        // Check if username exists
-        const checkResult = await pool.query(
-            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
-            [username]
+        // Check if user with same first name AND last name exists
+        const checkResult = await executeQuery(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE first_name = $1 AND last_name = $2)',
+            [formattedFirstName, formattedLastName]
         );
         
-        if (checkResult.rows[0].exists) {
-            return res.status(400).json({ error: 'This name is already registered' });
+        if (checkResult[0].exists) {
+            return res.status(400).json({ error: 'A user with this exact name already exists' });
         }
 
-        // Insert new user
-        await pool.query(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted]
+        // Insert new user with default time_left
+        await executeQuery(
+            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 900]
         );
 
-        res.json({ username });
+        res.json({ 
+            username: `${formattedFirstName} ${formattedLastName}`,
+            timeLeft: 900 // Send initial time to client
+        });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ error: 'Registration failed' });
@@ -282,57 +458,19 @@ app.get('/api/check-username/:username', async (req, res) => {
     }
 });
 
-// Database initialization
-const initializeDatabaseTables = async () => {
+// Get all users with their remaining time
+app.get('/api/users-time', async (req, res) => {
     try {
-        // Create users table
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                first_name VARCHAR(255) NOT NULL,
-                last_name VARCHAR(255) NOT NULL,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                age INTEGER NOT NULL,
-                gender VARCHAR(50) NOT NULL,
-                terms_accepted BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Existing tables
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS comments (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) NOT NULL,
-                avatar_url VARCHAR(255),
-                comment TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS simulated_comments (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) NOT NULL,
-                avatar_url VARCHAR(255),
-                comment TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                delay INTEGER
-            )
-        `);
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS reports (
-                id SERIAL PRIMARY KEY,
-                reported_username VARCHAR(255) NOT NULL,
-                reporting_username VARCHAR(255) NOT NULL,
-                timestamp TIMESTAMP NOT NULL
-            )
-        `);
-        console.log('Database initialized successfully');
-    } catch (err) {
-        console.error('Database initialization error:', err.stack);
-        process.exit(1);
+        const result = await executeQuery(
+            'SELECT username, time_left FROM users ORDER BY time_left DESC',
+            []
+        );
+        res.json(result);
+    } catch (error) {
+        console.error('Error getting users time:', error);
+        res.status(500).json({ error: 'Failed to get users time' });
     }
-};
+});
 
 // Routes
 app.get('/api/comments', getComments);
@@ -360,5 +498,4 @@ const startServer = () => {
 // Initialize application
 connectToDatabase();
 initializeDatabase();
-initializeDatabaseTables();
 startServer();

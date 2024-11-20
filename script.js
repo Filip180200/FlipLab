@@ -513,8 +513,6 @@ function setupChannelInteractions() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    startCountdown();
-
     // Settings button notification
     const settingsButton = document.querySelector('.settings-btn');
     if (settingsButton) {
@@ -624,24 +622,195 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Timer functionality
-let sessionTime = 15 * 60; // 15 minutes in seconds
+let sessionTime = 900; // 15 minutes in seconds
+let timerInterval = null;
 const countdownElement = document.getElementById('countdown');
 
 // Start countdown timer
-function startCountdown() {
-    const endTime = Date.now() + (sessionTime * 1000);
-    
-    const timer = setInterval(() => {
-        const now = Date.now();
-        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
-        
-        if (timeLeft === 0) {
-            clearInterval(timer);
-            window.location.href = '/thank-you.html';
+async function startCountdown() {
+    // Get initial time from server
+    const username = localStorage.getItem('username');
+    if (username) {
+        try {
+            const response = await fetch(`/api/time-left/${username}`);
+            if (response.ok) {
+                const data = await response.json();
+                sessionTime = data.timeLeft;
+
+                // If time is up, redirect to thank-you page
+                if (sessionTime <= 0) {
+                    localStorage.removeItem('username');
+                    window.location.href = '/thank-you.html';
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error getting initial time:', error);
         }
-        
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    updateTimerDisplay(sessionTime);
+    
+    // Clear any existing interval
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+
+    timerInterval = setInterval(() => {
+        if (sessionTime > 0) {
+            sessionTime--;
+            updateTimerDisplay(sessionTime);
+            
+            // Sync with server every 30 seconds or when time is up
+            if (sessionTime % 30 === 0 || sessionTime === 0) {
+                fetch('/api/update-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: localStorage.getItem('username'),
+                        timeLeft: sessionTime
+                    })
+                }).catch(error => console.error('Error updating time:', error));
+            }
+
+            if (sessionTime === 0) {
+                clearInterval(timerInterval);
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
+            }
+        }
     }, 1000);
+}
+
+// Update timer display
+function updateTimerDisplay(timeLeft) {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    if (countdownElement) {
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Prevent going back to web.html if session is ended
+window.addEventListener('load', async () => {
+    const username = localStorage.getItem('username');
+    if (!username) {
+        window.location.href = '/thank-you.html';
+        return;
+    }
+
+    // Check if time is still valid
+    try {
+        const response = await fetch(`/api/time-left/${username}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (!data.timeLeft || data.timeLeft <= 0) {
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
+                return;
+            }
+        } else {
+            // If error or user not found, redirect to thank-you
+            localStorage.removeItem('username');
+            window.location.href = '/thank-you.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking time:', error);
+        localStorage.removeItem('username');
+        window.location.href = '/thank-you.html';
+        return;
+    }
+});
+
+// Prevent back button after session ends
+window.addEventListener('popstate', function(event) {
+    const username = localStorage.getItem('username');
+    if (!username && window.location.pathname !== '/thank-you.html') {
+        window.location.href = '/thank-you.html';
+    }
+});
+
+// Handle page visibility change and window close
+window.addEventListener('beforeunload', (event) => {
+    const username = localStorage.getItem('username');
+    if (username && sessionTime > 0) {
+        const beaconData = {
+            username: username,
+            timeLeft: Math.max(0, sessionTime)
+        };
+
+        // Use the sendBeacon API with proper content type
+        navigator.sendBeacon('/api/update-time/beacon', new Blob(
+            [JSON.stringify(beaconData)],
+            { type: 'application/json' }
+        ));
+        
+        // Clear the username from storage
+        localStorage.removeItem('username');
+    }
+});
+
+document.addEventListener('visibilitychange', async () => {
+    const username = localStorage.getItem('username');
+    
+    if (document.hidden) {
+        if (username && sessionTime > 0) {
+            try {
+                // Save the current time immediately when tab loses focus
+                const response = await fetch('/api/update-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        timeLeft: Math.max(0, sessionTime)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update time');
+                }
+            } catch (error) {
+                console.error('Error saving time:', error);
+            }
+        }
+    } else {
+        // Page becomes visible again
+        if (username) {
+            try {
+                const response = await fetch(`/api/time-left/${username}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionTime = data.timeLeft;
+                    
+                    // If time is up, redirect to thank-you page
+                    if (sessionTime <= 0) {
+                        localStorage.removeItem('username');
+                        window.location.href = '/thank-you.html';
+                        return;
+                    }
+                    
+                    // Restart countdown with current time
+                    startCountdown();
+                }
+            } catch (error) {
+                console.error('Error getting time:', error);
+            }
+        }
+    }
+});
+
+// Initialize timer when page loads if we're on web.html and when page becomes visible
+if (window.location.pathname.includes('web.html')) {
+    document.addEventListener('DOMContentLoaded', startCountdown);
+    // Also start countdown when page becomes visible again
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            startCountdown();
+        }
+    });
 }
