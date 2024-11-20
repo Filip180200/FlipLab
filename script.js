@@ -69,24 +69,7 @@ function formatNumber(num) {
 }
 
 function showNotification(message, type = 'info') {
-    // Browser notification
-    if (Notification.permission === "granted") {
-        new Notification("FlipLab", {
-            body: message,
-            icon: '/assets/favicon.ico'
-        });
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification("FlipLab", {
-                    body: message,
-                    icon: '/assets/favicon.ico'
-                });
-            }
-        });
-    }
-
-    // In-app notification
+    // In-app notification only
     const notification = document.createElement('div');
     notification.className = `notification ${type} show`;
     
@@ -105,6 +88,10 @@ function showNotification(message, type = 'info') {
     notification.appendChild(icon);
     notification.appendChild(messageText);
     notification.appendChild(closeBtn);
+    
+    // Remove existing notifications of the same type
+    const existingNotifications = document.querySelectorAll(`.notification.${type}`);
+    existingNotifications.forEach(n => n.remove());
     
     document.body.appendChild(notification);
     
@@ -528,10 +515,51 @@ function setupChannelInteractions() {
             const subscribeBtn = document.querySelector('.subscribe-btn');
             followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
             followBtn.style.background = '#3a3a3d';
-            subscribeBtn.innerHTML = '<i class="fas fa-star"></i> Subscribe';
+            followBtn.classList.remove('following');
+            subscribeBtn.innerHTML = '<i class="far fa-star"></i> Subscribe';
+            subscribeBtn.style.background = '#3a3a3d';
+            subscribeBtn.classList.remove('subscribed');
         });
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const subscribeBtn = document.querySelector('.subscribe-btn');
+    if (subscribeBtn) {
+        let isSubscribed = false;
+        subscribeBtn.addEventListener('click', function() {
+            isSubscribed = !isSubscribed;
+            if (isSubscribed) {
+                this.innerHTML = '<i class="fas fa-star"></i> Subscribed';
+                this.style.background = '#9147ff';  // Purple color when subscribed
+                showNotification('Thanks for subscribing!', 'success');
+            } else {
+                this.innerHTML = '<i class="far fa-star"></i> Subscribe';
+                this.style.background = '#3a3a3d';  // Default color
+                showNotification('Subscription cancelled', 'info');
+            }
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const followBtn = document.querySelector('.follow-btn');
+    if (followBtn) {
+        let isFollowing = false;
+        followBtn.addEventListener('click', function() {
+            isFollowing = !isFollowing;
+            if (isFollowing) {
+                this.innerHTML = '<i class="fas fa-heart-broken"></i> Unfollow';
+                this.style.background = '#f00';  // Red color when following
+                showNotification('Thanks for following! You will now receive notifications when we go live.', 'success');
+            } else {
+                this.innerHTML = '<i class="fas fa-heart"></i> Follow';
+                this.style.background = '#3a3a3d';  // Default color
+                showNotification('You have unfollowed the channel', 'info');
+            }
+        });
+    }
+});
 
 // Timer functionality
 let sessionTime = 15 * 60; // 15 minutes in seconds

@@ -98,7 +98,7 @@
                                     </div>
                                     <div class="stream-buttons">
                                         <div class="buttons-row">
-                                            <button class="follow-btn"><i class="fas fa-heart"></i> <span>Follow</span></button>
+                                            <button class="follow-btn"><i class="fas fa-heart"></i> Follow</button>
                                             <button class="subscribe-btn"><i class="far fa-star"></i> <span>Subscribe</span></button>
                                         </div>
                                         <div class="stream-viewers">
@@ -137,47 +137,10 @@
     <script src="script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle follow button
-            const followButton = document.querySelector('.follow-btn');
-            if (followButton) {
-                followButton.addEventListener('click', function() {
-                    const isFollowing = this.classList.toggle('following');
-                    const icon = this.querySelector('i');
-                    const text = this.querySelector('span');
-                    
-                    if (isFollowing) {
-                        icon.className = 'fas fa-heart-broken';
-                        text.textContent = 'Unfollow';
-                        showNotification('Channel followed!', 'success');
-                    } else {
-                        icon.className = 'fas fa-heart';
-                        text.textContent = 'Follow';
-                        showNotification('Channel unfollowed', 'info');
-                    }
-                });
-            }
-
-            // Handle subscribe button
-            const subscribeButton = document.querySelector('.subscribe-btn');
-            if (subscribeButton) {
-                subscribeButton.addEventListener('click', function() {
-                    const isSubscribed = this.classList.toggle('subscribed');
-                    const icon = this.querySelector('i');
-                    
-                    if (isSubscribed) {
-                        icon.className = 'fas fa-star';
-                        showNotification('Subscribed to channel!', 'success');
-                    } else {
-                        icon.className = 'far fa-star';
-                        showNotification('Subscription cancelled', 'info');
-                    }
-                });
-            }
-
             // Settings button notification
             const settingsButton = document.querySelector('.settings-btn');
             if (settingsButton) {
-                settingsButton.addEventListener('click', function() {
+                settingsButton.addEventListener('click', () => {
                     showNotification('Settings will be available in a future update!', 'info');
                 });
             }
