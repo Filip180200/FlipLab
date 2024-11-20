@@ -336,21 +336,33 @@ async function reportUser(username) {
     try {
         const reportingUsername = localStorage.getItem('username') || 'Anonymous';
         
+        // Check if user is already reported before making the API call
         if (reportedUsers.has(username)) {
             showNotification(`User ${username} has already been reported`, 'warning');
             return;
         }
 
-        const response = await postData('/api/report', {
-            reportedUsername: username,
-            reportingUsername: reportingUsername
+        // Add to reported users set BEFORE making the API call to prevent double submissions
+        reportedUsers.add(username);
+
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reportedUsername: username,
+                reportingUsername: reportingUsername,
+                timestamp: new Date().toISOString() // Add timestamp to ensure uniqueness
+            })
         });
 
         if (!response.ok) {
+            // If the API call fails, remove from reported users set to allow retry
+            reportedUsers.delete(username);
             throw new Error('Failed to submit report');
         }
 
-        reportedUsers.add(username);
         showNotification(`User ${username} has been reported`, 'success');
         
         const userMessages = document.querySelectorAll('.chat-message');
@@ -383,19 +395,16 @@ async function addComment(event) {
             comment: comment
         });
 
-        // Create the comment object
+        // Add comment to cache
+        addCommentToCache(nickname, comment);
+
+        // Create and display the comment immediately
         const commentObj = {
             id: Date.now(),  // Temporary ID
             username: nickname,
             comment: comment,
             timestamp: new Date().toISOString()
         };
-
-        // Add comment to cache only once
-        addCommentToCache(nickname, {
-            comment: comment,
-            timestamp: commentObj.timestamp
-        });
         
         // Clear input before adding comment to prevent double-posting
         commentInput.value = '';
