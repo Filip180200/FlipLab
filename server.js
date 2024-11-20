@@ -157,7 +157,7 @@ const addComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO comments (username, comment) VALUES ($1, $2)';
+        const query = 'INSERT INTO comments (username, comment, timestamp) VALUES ($1, $2, CURRENT_TIMESTAMP)';
         await executeQuery(query, [username, comment]);
         res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
@@ -278,12 +278,17 @@ app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
         
+        if (timeLeft < 0) {
+            return res.status(400).json({ error: 'Time left cannot be negative' });
+        }
+
         const result = await executeQuery(
             'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
-            [timeLeft, username]
+            [Math.max(0, timeLeft), username]
         );
         
         if (result.length > 0) {
+            // If the update was successful, return the updated time
             res.json({ timeLeft: result[0].time_left });
         } else {
             res.status(404).json({ error: 'User not found' });
@@ -291,6 +296,31 @@ app.post('/api/update-time', async (req, res) => {
     } catch (error) {
         console.error('Error updating time:', error);
         res.status(500).json({ error: 'Failed to update time' });
+    }
+});
+
+// Update user's time left (beacon endpoint)
+app.post('/api/update-time/beacon', async (req, res) => {
+    try {
+        // For beacon requests, we need to read the raw body
+        const body = req.body;
+        const { username, timeLeft } = typeof body === 'string' ? JSON.parse(body) : body;
+        
+        if (!username || timeLeft === undefined) {
+            console.error('Invalid beacon data:', body);
+            return res.status(400).end();
+        }
+
+        await executeQuery(
+            'UPDATE users SET time_left = $1 WHERE username = $2',
+            [Math.max(0, timeLeft), username]
+        );
+        
+        // For beacon requests, we just need to end the response
+        res.status(200).end();
+    } catch (error) {
+        console.error('Error handling beacon time update:', error);
+        res.status(500).end();
     }
 });
 

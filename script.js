@@ -685,32 +685,52 @@ function updateTimerDisplay(timeLeft) {
     }
 }
 
-// Handle page visibility change
-document.addEventListener('visibilitychange', () => {
+// Handle page visibility change and window close
+window.addEventListener('beforeunload', async (event) => {
+    const username = localStorage.getItem('username');
+    if (username && sessionTime > 0) {
+        // Use the sendBeacon API for more reliable data sending when closing
+        navigator.sendBeacon('/api/update-time/beacon', JSON.stringify({
+            username: username,
+            timeLeft: sessionTime
+        }));
+    }
+});
+
+document.addEventListener('visibilitychange', async () => {
     if (document.hidden) {
-        // Save current time to server before user leaves
         const username = localStorage.getItem('username');
         if (username && sessionTime > 0) {
-            fetch('/api/update-time', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username: username,
-                    timeLeft: sessionTime
-                })
-            })
-            .then(() => {
-                // Clear interval and redirect to thank-you page
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
+            try {
+                // Save the current time immediately when tab loses focus
+                await fetch('/api/update-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        timeLeft: sessionTime
+                    })
+                });
+            } catch (error) {
+                console.error('Error saving time:', error);
+            }
+        }
+    } else {
+        // Page becomes visible again - get the latest time from server and restart countdown
+        const username = localStorage.getItem('username');
+        if (username) {
+            try {
+                const response = await fetch(`/api/time-left/${username}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionTime = data.timeLeft;
                 }
-                localStorage.removeItem('username'); // Clear username from storage
-                window.location.href = '/thank-you.html';
-            })
-            .catch(error => console.error('Error saving time:', error));
+            } catch (error) {
+                console.error('Error getting time:', error);
+            }
+            startCountdown();
         }
     }
 });
