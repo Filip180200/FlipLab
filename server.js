@@ -119,29 +119,24 @@ const getComments = async (req, res, next) => {
                 SELECT 
                     id,
                     username,
-                    avatar_url,
                     comment,
                     timestamp,
                     'simulated' as type,
                     delay,
-                    ROW_NUMBER() OVER (PARTITION BY username, comment ORDER BY timestamp DESC) as rn
+                    avatar_url
                 FROM simulated_comments
                 UNION ALL
                 SELECT 
                     id,
                     username,
-                    NULL as avatar_url,
                     comment,
                     timestamp,
                     'normal' as type,
                     0 as delay,
-                    ROW_NUMBER() OVER (PARTITION BY username, comment ORDER BY timestamp DESC) as rn
+                    NULL as avatar_url
                 FROM comments
             )
-            SELECT 
-                id, username, avatar_url, comment, timestamp, type, delay
-            FROM ranked_comments 
-            WHERE rn = 1
+            SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query);
@@ -159,31 +154,26 @@ const getNewComments = async (req, res, next) => {
                 SELECT 
                     id,
                     username,
-                    avatar_url,
                     comment,
                     timestamp,
                     'simulated' as type,
                     delay,
-                    ROW_NUMBER() OVER (PARTITION BY username, comment ORDER BY timestamp DESC) as rn
+                    avatar_url
                 FROM simulated_comments
                 WHERE timestamp > $1
                 UNION ALL
                 SELECT 
                     id,
                     username,
-                    NULL as avatar_url,
                     comment,
                     timestamp,
                     'normal' as type,
                     0 as delay,
-                    ROW_NUMBER() OVER (PARTITION BY username, comment ORDER BY timestamp DESC) as rn
+                    NULL as avatar_url
                 FROM comments
                 WHERE timestamp > $1
             )
-            SELECT 
-                id, username, avatar_url, comment, timestamp, type, delay
-            FROM ranked_comments 
-            WHERE rn = 1
+            SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query, [lastTimestamp || new Date().toISOString()]);
@@ -211,7 +201,7 @@ const addComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Please wait before posting the same comment again' });
         }
 
-        const query = 'INSERT INTO comments (username, comment, timestamp) VALUES ($1, $2, CURRENT_TIMESTAMP)';
+        const query = 'INSERT INTO comments (username, comment) VALUES ($1, $2)';
         await executeQuery(query, [username, comment]);
         res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
@@ -227,29 +217,24 @@ const getLastThreeComments = async (req, res, next) => {
                 SELECT 
                     id,
                     username,
-                    NULL as avatar_url,
                     comment,
                     timestamp,
                     'normal' as type,
-                    ROW_NUMBER() OVER (PARTITION BY comment ORDER BY timestamp DESC) as rn
+                    NULL as avatar_url
                 FROM comments
                 WHERE username = $1
                 UNION ALL
                 SELECT 
                     id,
                     username,
-                    avatar_url,
                     comment,
                     timestamp,
                     'simulated' as type,
-                    ROW_NUMBER() OVER (PARTITION BY comment ORDER BY timestamp DESC) as rn
+                    avatar_url
                 FROM simulated_comments
                 WHERE username = $1
             )
-            SELECT 
-                id, username, avatar_url, comment, timestamp, type
-            FROM ranked_comments 
-            WHERE rn = 1
+            SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
             LIMIT 3
         `;
