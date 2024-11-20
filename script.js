@@ -693,6 +693,46 @@ function updateTimerDisplay(timeLeft) {
     }
 }
 
+// Prevent going back to web.html if session is ended
+window.addEventListener('load', async () => {
+    const username = localStorage.getItem('username');
+    if (!username) {
+        window.location.href = '/thank-you.html';
+        return;
+    }
+
+    // Check if time is still valid
+    try {
+        const response = await fetch(`/api/time-left/${username}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (!data.timeLeft || data.timeLeft <= 0) {
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
+                return;
+            }
+        } else {
+            // If error or user not found, redirect to thank-you
+            localStorage.removeItem('username');
+            window.location.href = '/thank-you.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking time:', error);
+        localStorage.removeItem('username');
+        window.location.href = '/thank-you.html';
+        return;
+    }
+});
+
+// Prevent back button after session ends
+window.addEventListener('popstate', function(event) {
+    const username = localStorage.getItem('username');
+    if (!username && window.location.pathname !== '/thank-you.html') {
+        window.location.href = '/thank-you.html';
+    }
+});
+
 // Handle page visibility change and window close
 window.addEventListener('beforeunload', (event) => {
     const username = localStorage.getItem('username');
@@ -763,13 +803,6 @@ document.addEventListener('visibilitychange', async () => {
         }
     }
 });
-
-// Prevent going back to web.html if session is ended
-if (window.location.pathname.includes('web.html')) {
-    if (!localStorage.getItem('username')) {
-        window.location.href = '/';
-    }
-}
 
 // Initialize timer when page loads if we're on web.html and when page becomes visible
 if (window.location.pathname.includes('web.html')) {
