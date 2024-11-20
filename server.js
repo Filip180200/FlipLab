@@ -272,10 +272,10 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: 'A user with this exact name already exists' });
         }
 
-        // Insert new user with default time_left and current timestamp
+        // Insert new user with default time_left
         await executeQuery(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left, last_active)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`,
+            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 900]
         );
 

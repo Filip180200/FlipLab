@@ -685,21 +685,38 @@ function updateTimerDisplay(timeLeft) {
     }
 }
 
-// Pause timer when tab is not visible
+// Handle page visibility change
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        // User left the page, clear the interval
+        // Save current time to server before user leaves
+        const username = localStorage.getItem('username');
+        if (username && sessionTime > 0) {
+            fetch('/api/update-time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    timeLeft: sessionTime
+                })
+            }).catch(error => console.error('Error saving time:', error));
+        }
+        // Clear the interval
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-    } else {
-        // User is back, restart the countdown
-        startCountdown();
     }
 });
 
-// Initialize timer when page loads if we're on web.html
+// Initialize timer when page loads if we're on web.html and when page becomes visible
 if (window.location.pathname.includes('web.html')) {
     document.addEventListener('DOMContentLoaded', startCountdown);
+    // Also start countdown when page becomes visible again
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            startCountdown();
+        }
+    });
 }
