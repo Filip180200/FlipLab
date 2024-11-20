@@ -60,6 +60,46 @@ const connectToDatabase = async () => {
     }
 };
 
+// Database initialization
+const initializeDatabase = async () => {
+    try {
+        // Create tables if they don't exist
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url TEXT,
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS simulated_comments (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url TEXT,
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                delay INTEGER DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                first_name VARCHAR(255),
+                last_name VARCHAR(255),
+                age INTEGER,
+                gender VARCHAR(50),
+                time_left INTEGER DEFAULT 3600,
+                terms_accepted BOOLEAN DEFAULT false
+            );
+        `);
+        console.log('Database tables initialized successfully');
+    } catch (err) {
+        console.error('Error initializing database tables:', err);
+        process.exit(1);
+    }
+};
+
 // Database query helper
 const executeQuery = async (query, params = []) => {
     try {
@@ -74,11 +114,14 @@ const executeQuery = async (query, params = []) => {
 // Route handlers
 const getComments = async (req, res, next) => {
     try {
+        // Get both simulated and real comments
         const query = `
-            SELECT id, username, comment, timestamp
-            FROM comments
+            (SELECT id, username, avatar_url, comment, timestamp, 'simulated' as type, delay
+            FROM simulated_comments)
+            UNION ALL
+            (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type, 0 as delay
+            FROM comments)
             ORDER BY timestamp DESC
-            LIMIT 50
         `;
         const comments = await executeQuery(query);
         res.json(comments);
@@ -91,13 +134,33 @@ const getNewComments = async (req, res, next) => {
     try {
         const { lastTimestamp } = req.query;
         const query = `
-            SELECT id, username, comment, timestamp
+            (SELECT id, username, avatar_url, comment, timestamp, 'simulated' as type, delay
+            FROM simulated_comments
+            WHERE timestamp > $1)
+            UNION ALL
+            (SELECT id, username, avatar_url, comment, timestamp, 'normal' as type, 0 as delay
             FROM comments
-            WHERE timestamp > $1
+            WHERE timestamp > $1)
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query, [lastTimestamp || new Date().toISOString()]);
         res.json(comments);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const addComment = async (req, res, next) => {
+    try {
+        const { username, comment, avatar_url } = req.body;
+
+        if (!username || !comment) {
+            return res.status(400).json({ error: 'Username and comment are required' });
+        }
+
+        const query = 'INSERT INTO comments (username, avatar_url, comment) VALUES ($1, $2, $3)';
+        await executeQuery(query, [username, avatar_url, comment]);
+        res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
         next(err);
     }
@@ -120,22 +183,6 @@ const getLastThreeComments = async (req, res, next) => {
         
         const comments = await executeQuery(query, [username]);
         res.json(comments);
-    } catch (err) {
-        next(err);
-    }
-};
-
-const addComment = async (req, res, next) => {
-    try {
-        const { username, comment } = req.body;
-
-        if (!username || !comment) {
-            return res.status(400).json({ error: 'Username and comment are required' });
-        }
-
-        const query = 'INSERT INTO comments (username, comment, timestamp) VALUES ($1, $2, CURRENT_TIMESTAMP)';
-        await executeQuery(query, [username, comment]);
-        res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
         next(err);
     }
@@ -343,4 +390,5 @@ const startServer = () => {
 
 // Initialize application
 connectToDatabase();
+initializeDatabase();
 startServer();
