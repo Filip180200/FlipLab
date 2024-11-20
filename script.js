@@ -260,27 +260,24 @@ function createTextContainer(comment) {
 // Funkcje raportu użytkownika
 async function openReportModal(username) {
     try {
-        // Get the user's avatar from their comments
+        if (reportedUsers.has(username)) {
+            showNotification(`User ${username} has already been reported`, 'warning');
+            return;
+        }
+
         const userComments = document.querySelectorAll('.chat-message');
         let userAvatar = DEFAULT_AVATAR;
-        let recentComments = [];
+        let recentComments = new Set();
         
-        // Collect comments and avatar for the user
         userComments.forEach(commentEl => {
             const commentUsername = commentEl.querySelector('.username').textContent;
             if (commentUsername === username) {
-                // Get avatar if we haven't found it yet
                 if (userAvatar === DEFAULT_AVATAR) {
                     const avatarImg = commentEl.querySelector('.chat-avatar');
                     userAvatar = avatarImg ? avatarImg.src : DEFAULT_AVATAR;
                 }
-                
-                // Get comment text
                 const commentText = commentEl.querySelector('.message-content').textContent;
-                recentComments.push({
-                    comment: commentText,
-                    timestamp: new Date().toISOString()
-                });
+                recentComments.add(commentText);
             }
         });
         
@@ -292,16 +289,14 @@ async function openReportModal(username) {
         reportUsername.textContent = username;
         avatar.src = userAvatar;
         avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
-
-        // Clear previous comments
         commentsList.innerHTML = '';
         
-        // Add recent comments in reverse chronological order
-        if (recentComments.length > 0) {
-            recentComments.slice(-3).forEach(comment => {
+        const uniqueComments = Array.from(recentComments).slice(-3);
+        if (uniqueComments.length > 0) {
+            uniqueComments.forEach(comment => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = 'message';
-                messageDiv.textContent = comment.comment;
+                messageDiv.textContent = comment;
                 commentsList.appendChild(messageDiv);
             });
         } else {
@@ -311,7 +306,6 @@ async function openReportModal(username) {
             commentsList.appendChild(noCommentsDiv);
         }
         
-        // Setup event handlers
         const closeButton = reportModal.querySelector('.close-preview');
         const submitButton = reportModal.querySelector('.report-submit');
         const overlay = document.querySelector('.report-overlay');
@@ -323,7 +317,6 @@ async function openReportModal(username) {
         };
         overlay.onclick = closeReportModal;
         
-        // Show modal and overlay
         reportModal.classList.add('active');
         overlay.classList.add('active');
     } catch (error) {
@@ -341,10 +334,13 @@ function closeReportModal() {
 
 async function reportUser(username) {
     try {
-        // Get the current user (you might want to replace this with actual logged-in user)
-        const reportingUsername = "Current User";
+        const reportingUsername = localStorage.getItem('username') || 'Anonymous';
         
-        // Send report to server
+        if (reportedUsers.has(username)) {
+            showNotification(`User ${username} has already been reported`, 'warning');
+            return;
+        }
+
         const response = await fetch('/api/report', {
             method: 'POST',
             headers: {
@@ -360,10 +356,9 @@ async function reportUser(username) {
             throw new Error('Failed to submit report');
         }
 
-        // Show success notification
+        reportedUsers.add(username);
         showNotification(`User ${username} has been reported`, 'success');
         
-        // Mark user's messages as reported
         const userMessages = document.querySelectorAll('.chat-message');
         userMessages.forEach(message => {
             const messageUsername = message.querySelector('.username').textContent;
