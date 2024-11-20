@@ -117,73 +117,6 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script src="script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Settings button notification
-            const settingsButton = document.querySelector('.settings-btn');
-            if (settingsButton) {
-                settingsButton.addEventListener('click', () => {
-                    showNotification('Settings will be available in a future update!', 'info');
-                });
-            }
-
-            // Handle clicks
-            document.addEventListener('click', function(e) {
-                const reportModal = document.getElementById('reportModal');
-                const reportOverlay = document.querySelector('.report-overlay');
-
-                // Handle username clicks
-                if (e.target.classList.contains('username')) {
-                    const messageEl = e.target.closest('.chat-message');
-                    const username = messageEl.querySelector('.username').textContent;
-                    const avatar = messageEl.querySelector('.chat-avatar').src;
-                    
-                    // Update modal content
-                    reportModal.querySelector('#reportUsername').textContent = username;
-                    reportModal.querySelector('.chat-avatar').src = avatar;
-                    
-                    // Show modal and overlay
-                    reportModal.style.display = 'block';
-                    reportOverlay.style.display = 'block';
-                }
-
-                // Handle report button clicks
-                if (e.target.closest('.report-btn')) {
-                    const messageEl = e.target.closest('.chat-message');
-                    const username = messageEl.querySelector('.username').textContent;
-                    const avatar = messageEl.querySelector('.chat-avatar').src;
-                    
-                    // Update modal content
-                    reportModal.querySelector('#reportUsername').textContent = username;
-                    reportModal.querySelector('.chat-avatar').src = avatar;
-                    
-                    // Show modal and overlay
-                    reportModal.style.display = 'block';
-                    reportOverlay.style.display = 'block';
-                }
-
-                // Close on overlay click
-                if (e.target.classList.contains('report-overlay')) {
-                    reportModal.style.display = 'none';
-                    reportOverlay.style.display = 'none';
-                }
-
-                // Close on close button click
-                if (e.target.closest('.close-preview')) {
-                    reportModal.style.display = 'none';
-                    reportOverlay.style.display = 'none';
-                }
-
-                // Handle report submit
-                if (e.target.closest('.report-submit')) {
-                    const username = reportModal.querySelector('#reportUsername').textContent;
-                    showNotification('User ' + username + ' has been reported.', 'info');
-                    reportModal.style.display = 'none';
-                    reportOverlay.style.display = 'none';
-                }
-            });
-        });
-    </script>
     <!-- Report Overlay -->
     <div class="report-overlay"></div>
     
@@ -206,7 +139,5 @@
             <button class="report-submit">Report User</button>
         </div>
     </div>
-
-
 </body>
 </html>
