@@ -260,6 +260,7 @@ function createTextContainer(comment) {
 // Funkcje raportu użytkownika
 async function openReportModal(username) {
     try {
+        // Check if user is already reported before opening modal
         if (reportedUsers.has(username)) {
             showNotification(`User ${username} has already been reported`, 'warning');
             return;
@@ -336,13 +337,7 @@ async function reportUser(username) {
     try {
         const reportingUsername = localStorage.getItem('username') || 'Anonymous';
         
-        // Check if user is already reported before making the API call
-        if (reportedUsers.has(username)) {
-            showNotification(`User ${username} has already been reported`, 'warning');
-            return;
-        }
-
-        // Add to reported users set BEFORE making the API call to prevent double submissions
+        // Add to reported users set before API call
         reportedUsers.add(username);
 
         const response = await fetch('/api/report', {
@@ -353,18 +348,16 @@ async function reportUser(username) {
             body: JSON.stringify({
                 reportedUsername: username,
                 reportingUsername: reportingUsername,
-                timestamp: new Date().toISOString() // Add timestamp to ensure uniqueness
+                timestamp: new Date().toISOString()
             })
         });
 
         if (!response.ok) {
-            // If the API call fails, remove from reported users set to allow retry
             reportedUsers.delete(username);
             throw new Error('Failed to submit report');
         }
 
-        showNotification(`User ${username} has been reported`, 'success');
-        
+        // Mark user's messages as reported
         const userMessages = document.querySelectorAll('.chat-message');
         userMessages.forEach(message => {
             const messageUsername = message.querySelector('.username').textContent;
@@ -372,6 +365,9 @@ async function reportUser(username) {
                 message.classList.add('reported-message');
             }
         });
+
+        // Show success notification
+        showNotification(`User ${username} has been reported`, 'success');
 
     } catch (error) {
         console.error('Error reporting user:', error);
