@@ -1,13 +1,15 @@
 /* ==========================================================================
    Layout & Container Styles
    ========================================================================== */
+
+/* Main Layout */
 .content-wrapper {
     display: flex;
     height: 100vh;
     padding: 20px;
     box-sizing: border-box;
     gap: 20px;
-    background-color: #181818;
+    background-color: var(--bg-primary);
     overflow: hidden;
 }
 
@@ -28,7 +30,7 @@
 
 .video-container {
     width: 100%;
-    background: #0e0e10;
+    background: var(--bg-dark);
     border-radius: 8px;
     overflow: hidden;
     display: flex;
@@ -50,7 +52,7 @@
     min-height: 100vh;
     width: 100%;
     padding: 20px;
-    background-color: #181818;
+    background-color: var(--bg-primary);
     color: white;
     overflow-x: hidden;
 }
@@ -64,5 +66,26 @@
     min-height: 100vh;
     padding: 20px;
     text-align: center;
-    background-color: #181818;
+    background-color: var(--bg-primary);
+    color: white;
+}
+
+.thank-you-content {
+    background-color: #242424;
+    padding: 40px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+}
+
+.contact-email {
+    margin-top: 20px;
+    color: #9147ff;
+    font-size: 1.2em;
+}
+
+.thank-you-icon {
+    font-size: 4em;
+    color: #9147ff;
+    margin-bottom: 20px;
 }

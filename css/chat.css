@@ -4,7 +4,7 @@
 
 .chat-section {
     width: 340px;
-    background: #0e0e10;
+    background: var(--bg-dark);
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -54,13 +54,13 @@
 }
 
 .username {
-    font-weight: 600;
-    color: #9147ff;
+    color: var(--text-primary);
+    font-weight: 500;
     cursor: pointer;
 }
 
 .message-content {
-    color: #efeff1;
+    color: var(--text-primary);
 }
 
 /* Reported message styles */
@@ -80,7 +80,7 @@
 /* Comment Form Styles */
 #commentForm {
     padding: 15px;
-    background: #2d2d2d;
+    background: var(--bg-dark);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     gap: 8px;
@@ -93,12 +93,12 @@
     border: none;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    color: var(--text-primary);
     font-size: 14px;
 }
 
 #commentForm input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary);
 }
 
 #commentForm button {
@@ -106,7 +106,7 @@
     padding: 0 16px;
     border: none;
     border-radius: 4px;
-    background: #9147ff;
+    background: var(--accent-primary);
     color: white;
     font-weight: bold;
     cursor: pointer;
@@ -114,7 +114,7 @@
 }
 
 #commentForm button:hover {
-    background: #772ce8;
+    background: var(--accent-hover);
 }
 
 /* Report Modal Styles */
@@ -130,7 +130,7 @@
     width: 400px;
     max-width: 90%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    color: #efeff1;
+    color: var(--text-primary);
     z-index: 100002; /* Much higher than overlay */
 }
 
@@ -160,7 +160,7 @@
 
 .report-username {
     font-weight: bold;
-    color: #efeff1;
+    color: var(--text-primary);
 }
 
 .report-comments {
@@ -187,7 +187,7 @@
 }
 
 .close-preview:hover {
-    color: #efeff1;
+    color: var(--text-primary);
     background: rgba(255, 255, 255, 0.1);
 }
 
@@ -198,7 +198,7 @@
 }
 
 .report-submit {
-    background: #9147ff;
+    background: var(--accent-primary);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -210,7 +210,7 @@
 }
 
 .report-submit:hover {
-    background: #772ce8;
+    background: var(--accent-hover);
 }
 
 /* Make sure all modal elements are clickable */
