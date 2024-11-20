@@ -311,23 +311,7 @@ async function reportUser(username) {
             return;
         }
 
-        const response = await fetch('/api/report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                reportedUsername: username,
-                reportingUsername: reportingUsername,
-                timestamp: new Date().toISOString()
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to submit report');
-        }
-
-        // Add to reportedUsersMap
+        // Add to reportedUsersMap first
         if (!reportedUsersMap.has(username)) {
             reportedUsersMap.set(username, new Set());
         }
@@ -341,6 +325,34 @@ async function reportUser(username) {
                 message.classList.add('reported');
             }
         });
+
+        // Send report to server
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reportedUsername: username,
+                reportingUsername: reportingUsername,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            // If server request fails, rollback the local changes
+            reportedUsersMap.get(username).delete(reportingUsername);
+            if (reportedUsersMap.get(username).size === 0) {
+                reportedUsersMap.delete(username);
+            }
+            userMessages.forEach(message => {
+                const messageUsername = message.querySelector('.username').textContent;
+                if (messageUsername === username) {
+                    message.classList.remove('reported');
+                }
+            });
+            throw new Error('Failed to submit report');
+        }
 
         // Show success notification
         showNotification(`${username} successfully reported`, 'success');
