@@ -231,7 +231,6 @@ async function reportUser(username) {
         
         // Check if current user has already reported this user
         if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(reportingUsername)) {
-            showNotification(`${username} is already reported`, 'warning');
             return false;
         }
 
