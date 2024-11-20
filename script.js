@@ -225,10 +225,75 @@ function createCommentElement(comment) {
 }
 
 // Funkcje raportu użytkownika
+async function reportUser(username) {
+    try {
+        const reportingUsername = localStorage.getItem('username') || 'Anonymous';
+        
+        // Check if current user has already reported this user
+        if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(reportingUsername)) {
+            showNotification(`${username} is already reported`, 'warning');
+            return false;
+        }
+
+        // Add to reportedUsersMap first
+        if (!reportedUsersMap.has(username)) {
+            reportedUsersMap.set(username, new Set());
+        }
+        reportedUsersMap.get(username).add(reportingUsername);
+
+        // Mark user's messages as reported
+        const userMessages = document.querySelectorAll('.chat-message');
+        userMessages.forEach(message => {
+            const messageUsername = message.querySelector('.username').textContent;
+            if (messageUsername === username) {
+                message.classList.add('reported');
+            }
+        });
+
+        // Send report to server
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reportedUsername: username,
+                reportingUsername: reportingUsername,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            // If server request fails, rollback the local changes
+            reportedUsersMap.get(username).delete(reportingUsername);
+            if (reportedUsersMap.get(username).size === 0) {
+                reportedUsersMap.delete(username);
+            }
+            userMessages.forEach(message => {
+                const messageUsername = message.querySelector('.username').textContent;
+                if (messageUsername === username) {
+                    message.classList.remove('reported');
+                }
+            });
+            throw new Error('Failed to submit report');
+        }
+
+        // Show success notification
+        showNotification(`${username} successfully reported`, 'success');
+        return true;
+
+    } catch (error) {
+        console.error('Error reporting user:', error);
+        showNotification('Failed to report user', 'error');
+        return false;
+    }
+}
+
 async function openReportModal(username) {
     try {
         const currentUser = localStorage.getItem('username') || 'Anonymous';
-        // Check if current user has already reported this user
+        
+        // Check if already reported before opening modal
         if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(currentUser)) {
             showNotification(`${username} is already reported`, 'warning');
             return;
@@ -280,9 +345,11 @@ async function openReportModal(username) {
         const overlay = document.querySelector('.report-overlay');
         
         closeButton.onclick = closeReportModal;
-        submitButton.onclick = () => {
-            reportUser(username);
-            closeReportModal();
+        submitButton.onclick = async () => {
+            const success = await reportUser(username);
+            if (success) {
+                closeReportModal();
+            }
         };
         overlay.onclick = closeReportModal;
         
@@ -299,68 +366,6 @@ function closeReportModal() {
     const overlay = document.querySelector('.report-overlay');
     reportModal.classList.remove('active');
     overlay.classList.remove('active');
-}
-
-async function reportUser(username) {
-    try {
-        const reportingUsername = localStorage.getItem('username') || 'Anonymous';
-        
-        // Check if current user has already reported this user
-        if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(reportingUsername)) {
-            showNotification(`${username} is already reported`, 'warning');
-            return;
-        }
-
-        // Add to reportedUsersMap first
-        if (!reportedUsersMap.has(username)) {
-            reportedUsersMap.set(username, new Set());
-        }
-        reportedUsersMap.get(username).add(reportingUsername);
-
-        // Mark user's messages as reported
-        const userMessages = document.querySelectorAll('.chat-message');
-        userMessages.forEach(message => {
-            const messageUsername = message.querySelector('.username').textContent;
-            if (messageUsername === username) {
-                message.classList.add('reported');
-            }
-        });
-
-        // Send report to server
-        const response = await fetch('/api/report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                reportedUsername: username,
-                reportingUsername: reportingUsername,
-                timestamp: new Date().toISOString()
-            })
-        });
-
-        if (!response.ok) {
-            // If server request fails, rollback the local changes
-            reportedUsersMap.get(username).delete(reportingUsername);
-            if (reportedUsersMap.get(username).size === 0) {
-                reportedUsersMap.delete(username);
-            }
-            userMessages.forEach(message => {
-                const messageUsername = message.querySelector('.username').textContent;
-                if (messageUsername === username) {
-                    message.classList.remove('reported');
-                }
-            });
-            throw new Error('Failed to submit report');
-        }
-
-        // Show success notification
-        showNotification(`${username} successfully reported`, 'success');
-
-    } catch (error) {
-        console.error('Error reporting user:', error);
-        showNotification('Failed to report user', 'error');
-    }
 }
 
 // Funkcje komentarzy użytkownika
