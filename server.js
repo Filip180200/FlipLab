@@ -232,12 +232,16 @@ app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
         
-        await executeQuery(
-            'UPDATE users SET time_left = $1 WHERE username = $2',
+        const result = await executeQuery(
+            'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
             [timeLeft, username]
         );
         
-        res.json({ success: true });
+        if (result.length > 0) {
+            res.json({ timeLeft: result[0].time_left });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
     } catch (error) {
         console.error('Error updating time:', error);
         res.status(500).json({ error: 'Failed to update time' });
@@ -268,14 +272,17 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: 'A user with this exact name already exists' });
         }
 
-        // Insert new user
+        // Insert new user with default time_left
         await executeQuery(
             `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left)
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 300]
+            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 900]
         );
 
-        res.json({ username: `${formattedFirstName} ${formattedLastName}` });
+        res.json({ 
+            username: `${formattedFirstName} ${formattedLastName}`,
+            timeLeft: 900 // Send initial time to client
+        });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ error: 'Registration failed' });

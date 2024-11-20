@@ -622,22 +622,40 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Timer functionality
-let sessionTime = 300; // 5 minutes in seconds
+let sessionTime = 900; // 15 minutes in seconds
 const countdownElement = document.getElementById('countdown');
 const username = localStorage.getItem('username');
 
 // Start countdown timer
 async function startCountdown() {
+    // Get initial time from server
+    try {
+        const response = await fetch(`/api/time-left/${username}`);
+        if (!response.ok) {
+            throw new Error('Failed to get time from server');
+        }
+        const data = await response.json();
+        sessionTime = data.timeLeft;
+    } catch (error) {
+        console.error('Error getting initial time:', error);
+        // Keep default time if server request fails
+    }
+
     const endTime = Date.now() + (sessionTime * 1000);
     
     const timer = setInterval(async () => {
         const now = Date.now();
         const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
         
-        // Sync with server every 30 seconds
-        if (timeLeft % 30 === 0 && timeLeft > 0) {
+        // Update display
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Sync with server every 30 seconds or when time is up
+        if (timeLeft % 30 === 0 || timeLeft === 0) {
             try {
-                await fetch('/api/update-time', {
+                const response = await fetch('/api/update-time', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -647,35 +665,23 @@ async function startCountdown() {
                         timeLeft
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update time on server');
+                }
             } catch (error) {
                 console.error('Error syncing time:', error);
             }
         }
         
+        // Handle time expiration
         if (timeLeft === 0) {
             clearInterval(timer);
+            alert('Your session has expired!');
             window.location.href = '/';
         }
-        
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }, 1000);
 }
 
-// Load initial time from server
-async function loadInitialTime() {
-    try {
-        const response = await fetch(`/api/time-left/${username}`);
-        const data = await response.json();
-        sessionTime = data.timeLeft;
-        startCountdown();
-    } catch (error) {
-        console.error('Error loading time:', error);
-        // Fallback to default time if server request fails
-        startCountdown();
-    }
-}
-
 // Initialize timer when page loads
-window.addEventListener('load', loadInitialTime);
+document.addEventListener('DOMContentLoaded', startCountdown);
