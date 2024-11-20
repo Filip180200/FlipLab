@@ -74,11 +74,11 @@ const executeQuery = async (query, params = []) => {
 // Route handlers
 const getComments = async (req, res, next) => {
     try {
-        // Only get simulated comments
         const query = `
-            SELECT id, username, avatar_url, comment, timestamp, delay
-            FROM simulated_comments
+            SELECT id, username, comment, timestamp
+            FROM comments
             ORDER BY timestamp DESC
+            LIMIT 50
         `;
         const comments = await executeQuery(query);
         res.json(comments);
@@ -91,7 +91,7 @@ const getNewComments = async (req, res, next) => {
     try {
         const { lastTimestamp } = req.query;
         const query = `
-            SELECT id, username, avatar_url, comment, timestamp
+            SELECT id, username, comment, timestamp
             FROM comments
             WHERE timestamp > $1
             ORDER BY timestamp DESC
@@ -127,14 +127,14 @@ const getLastThreeComments = async (req, res, next) => {
 
 const addComment = async (req, res, next) => {
     try {
-        const { username, comment, avatar_url } = req.body;
+        const { username, comment } = req.body;
 
         if (!username || !comment) {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO comments (username, avatar_url, comment) VALUES ($1, $2, $3)';
-        await executeQuery(query, [username, avatar_url, comment]);
+        const query = 'INSERT INTO comments (username, comment, timestamp) VALUES ($1, $2, CURRENT_TIMESTAMP)';
+        await executeQuery(query, [username, comment]);
         res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
         next(err);
@@ -304,9 +304,8 @@ const initializeDatabaseTables = async () => {
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
-                avatar_url VARCHAR(255),
                 comment TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         `);
         await executeQuery(`
@@ -359,6 +358,7 @@ const startServer = () => {
 
 // Initialize application
 connectToDatabase();
+migrateDatabase();
 initializeDatabase();
 initializeDatabaseTables();
 startServer();
