@@ -53,9 +53,9 @@ const errorHandler = (err, req, res, next) => {
 const connectToDatabase = async () => {
     try {
         await pool.connect();
-        console.log('Connected to PostgreSQL database');
+        console.log('Connected to database successfully');
     } catch (err) {
-        console.error('Database connection error:', err.stack);
+        console.error('Error connecting to database:', err.stack);
         process.exit(1);
     }
 };
@@ -210,57 +210,38 @@ const addSimulatedComment = async (req, res, next) => {
     }
 };
 
-// Initialize database tables
-async function initializeDatabase() {
-    try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                first_name VARCHAR(255) NOT NULL,
-                last_name VARCHAR(255) NOT NULL,
-                age INTEGER NOT NULL CHECK (age >= 13),
-                gender VARCHAR(50) NOT NULL,
-                terms_accepted BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        console.log('Database tables initialized');
-    } catch (error) {
-        console.error('Error initializing database:', error);
-    }
-}
-
 // Register new user
 app.post('/api/register', async (req, res) => {
     try {
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
         
+        // Validate age
+        if (age < 18) {
+            return res.status(400).json({ error: 'You must be at least 18 years old to register' });
+        }
+
         // Capitalize first letter of each name and make the rest lowercase
         const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
         const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
         
-        // Generate username (FirstName LastName)
-        const username = `${formattedFirstName} ${formattedLastName}`;
-            
-        // Check if username exists
-        const checkResult = await pool.query(
-            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
-            [username]
+        // Check if user with same first name AND last name exists
+        const checkResult = await executeQuery(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE first_name = $1 AND last_name = $2)',
+            [formattedFirstName, formattedLastName]
         );
         
-        if (checkResult.rows[0].exists) {
-            return res.status(400).json({ error: 'This name is already registered' });
+        if (checkResult[0].exists) {
+            return res.status(400).json({ error: 'A user with this exact name already exists' });
         }
 
         // Insert new user
-        await pool.query(
+        await executeQuery(
             `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted)
              VALUES ($1, $2, $3, $4, $5, $6)`,
-            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted]
+            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted]
         );
 
-        res.json({ username });
+        res.json({ username: `${formattedFirstName} ${formattedLastName}` });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ error: 'Registration failed' });
@@ -281,57 +262,6 @@ app.get('/api/check-username/:username', async (req, res) => {
         res.status(500).json({ error: 'Failed to check username' });
     }
 });
-
-// Database initialization
-const initializeDatabaseTables = async () => {
-    try {
-        // Create users table
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                first_name VARCHAR(255) NOT NULL,
-                last_name VARCHAR(255) NOT NULL,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                age INTEGER NOT NULL,
-                gender VARCHAR(50) NOT NULL,
-                terms_accepted BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Existing tables
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS comments (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) NOT NULL,
-                comment TEXT NOT NULL,
-                timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS simulated_comments (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) NOT NULL,
-                avatar_url VARCHAR(255),
-                comment TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                delay INTEGER
-            )
-        `);
-        await executeQuery(`
-            CREATE TABLE IF NOT EXISTS reports (
-                id SERIAL PRIMARY KEY,
-                reported_username VARCHAR(255) NOT NULL,
-                reporting_username VARCHAR(255) NOT NULL,
-                timestamp TIMESTAMP NOT NULL
-            )
-        `);
-        console.log('Database initialized successfully');
-    } catch (err) {
-        console.error('Database initialization error:', err.stack);
-        process.exit(1);
-    }
-};
 
 // Routes
 app.get('/api/comments', getComments);
@@ -358,7 +288,4 @@ const startServer = () => {
 
 // Initialize application
 connectToDatabase();
-migrateDatabase();
-initializeDatabase();
-initializeDatabaseTables();
 startServer();
