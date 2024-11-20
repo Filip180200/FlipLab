@@ -157,7 +157,17 @@ const addComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO comments (username, comment, timestamp) VALUES ($1, $2, CURRENT_TIMESTAMP)';
+        // Check for duplicate comment in the last 5 seconds
+        const recentComments = await executeQuery(
+            'SELECT id FROM comments WHERE username = $1 AND comment = $2 AND timestamp > NOW() - INTERVAL \'5 seconds\'',
+            [username, comment]
+        );
+
+        if (recentComments.length > 0) {
+            return res.status(400).json({ error: 'Please wait before posting the same comment again' });
+        }
+
+        const query = 'INSERT INTO comments (username, comment) VALUES ($1, $2)';
         await executeQuery(query, [username, comment]);
         res.status(201).json({ message: 'Comment added successfully' });
     } catch (err) {
@@ -302,21 +312,40 @@ app.post('/api/update-time', async (req, res) => {
 // Update user's time left (beacon endpoint)
 app.post('/api/update-time/beacon', async (req, res) => {
     try {
-        // For beacon requests, we need to read the raw body
-        const body = req.body;
-        const { username, timeLeft } = typeof body === 'string' ? JSON.parse(body) : body;
-        
-        if (!username || timeLeft === undefined) {
-            console.error('Invalid beacon data:', body);
+        let data;
+        // Handle different types of request bodies
+        if (typeof req.body === 'string') {
+            try {
+                data = JSON.parse(req.body);
+            } catch (e) {
+                console.error('Error parsing beacon data:', e);
+                return res.status(400).end();
+            }
+        } else {
+            data = req.body;
+        }
+
+        // Validate the data
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid beacon data format:', data);
             return res.status(400).end();
         }
 
+        const { username, timeLeft } = data;
+        
+        if (!username || timeLeft === undefined) {
+            console.error('Missing required beacon data fields:', data);
+            return res.status(400).end();
+        }
+
+        // Ensure timeLeft is a number and not negative
+        const validTimeLeft = Math.max(0, parseInt(timeLeft, 10) || 0);
+
         await executeQuery(
             'UPDATE users SET time_left = $1 WHERE username = $2',
-            [Math.max(0, timeLeft), username]
+            [validTimeLeft, username]
         );
         
-        // For beacon requests, we just need to end the response
         res.status(200).end();
     } catch (error) {
         console.error('Error handling beacon time update:', error);

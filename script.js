@@ -636,6 +636,13 @@ async function startCountdown() {
             if (response.ok) {
                 const data = await response.json();
                 sessionTime = data.timeLeft;
+
+                // If time is up, redirect to thank-you page
+                if (sessionTime <= 0) {
+                    localStorage.removeItem('username');
+                    window.location.href = '/thank-you.html';
+                    return;
+                }
             }
         } catch (error) {
             console.error('Error getting initial time:', error);
@@ -670,7 +677,8 @@ async function startCountdown() {
 
             if (sessionTime === 0) {
                 clearInterval(timerInterval);
-                window.location.href = '/';
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
             }
         }
     }, 1000);
@@ -686,51 +694,72 @@ function updateTimerDisplay(timeLeft) {
 }
 
 // Handle page visibility change and window close
-window.addEventListener('beforeunload', async (event) => {
+window.addEventListener('beforeunload', (event) => {
     const username = localStorage.getItem('username');
     if (username && sessionTime > 0) {
-        // Use the sendBeacon API for more reliable data sending when closing
-        navigator.sendBeacon('/api/update-time/beacon', JSON.stringify({
+        const beaconData = {
             username: username,
-            timeLeft: sessionTime
-        }));
+            timeLeft: Math.max(0, sessionTime)
+        };
+
+        // Use the sendBeacon API with proper content type
+        navigator.sendBeacon('/api/update-time/beacon', new Blob(
+            [JSON.stringify(beaconData)],
+            { type: 'application/json' }
+        ));
+        
+        // Clear the username from storage
+        localStorage.removeItem('username');
     }
 });
 
 document.addEventListener('visibilitychange', async () => {
+    const username = localStorage.getItem('username');
+    
     if (document.hidden) {
-        const username = localStorage.getItem('username');
         if (username && sessionTime > 0) {
             try {
                 // Save the current time immediately when tab loses focus
-                await fetch('/api/update-time', {
+                const response = await fetch('/api/update-time', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         username: username,
-                        timeLeft: sessionTime
+                        timeLeft: Math.max(0, sessionTime)
                     })
                 });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update time');
+                }
             } catch (error) {
                 console.error('Error saving time:', error);
             }
         }
     } else {
-        // Page becomes visible again - get the latest time from server and restart countdown
-        const username = localStorage.getItem('username');
+        // Page becomes visible again
         if (username) {
             try {
                 const response = await fetch(`/api/time-left/${username}`);
                 if (response.ok) {
                     const data = await response.json();
                     sessionTime = data.timeLeft;
+                    
+                    // If time is up, redirect to thank-you page
+                    if (sessionTime <= 0) {
+                        localStorage.removeItem('username');
+                        window.location.href = '/thank-you.html';
+                        return;
+                    }
+                    
+                    // Restart countdown with current time
+                    startCountdown();
                 }
             } catch (error) {
                 console.error('Error getting time:', error);
             }
-            startCountdown();
         }
     }
 });
