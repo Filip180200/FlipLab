@@ -263,7 +263,7 @@ async function openReportModal(username) {
         const currentUser = localStorage.getItem('username') || 'Anonymous';
         // Check if current user has already reported this user
         if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(currentUser)) {
-            showNotification(`You have already reported ${username}`, 'warning');
+            showNotification(`${username} is already reported`, 'warning');
             return;
         }
 
@@ -340,7 +340,7 @@ async function reportUser(username) {
         
         // Check if current user has already reported this user
         if (reportedUsersMap.has(username) && reportedUsersMap.get(username).has(reportingUsername)) {
-            showNotification(`You have already reported ${username}`, 'warning');
+            showNotification(`${username} is already reported`, 'warning');
             return;
         }
 
@@ -376,7 +376,7 @@ async function reportUser(username) {
         });
 
         // Show success notification
-        showNotification(`You have reported ${username}`, 'success');
+        showNotification(`${username} successfully reported`, 'success');
 
     } catch (error) {
         console.error('Error reporting user:', error);
