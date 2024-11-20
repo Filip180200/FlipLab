@@ -14,7 +14,7 @@
             <i class="fas fa-sync-alt logo-icon"></i>
             <span class="site-name">FlipLab</span>
             <div class="timer-container">
-                <span class="countdown" id="timer">15:00</span>
+                <span class="countdown" id="countdown">15:00</span>
             </div>
         </div>
     </div>
@@ -155,7 +155,7 @@
         async function updateTimer() {
             if (timeLeft > 0) {
                 timeLeft--;
-                document.getElementById('timer').textContent = formatTime(timeLeft);
+                document.getElementById('countdown').textContent = formatTime(timeLeft);
                 
                 // Sync with server every 30 seconds
                 if (timeLeft % 30 === 0) {
@@ -187,7 +187,7 @@
                 const response = await fetch(`/api/time-left/${username}`);
                 const data = await response.json();
                 timeLeft = data.timeLeft;
-                document.getElementById('timer').textContent = formatTime(timeLeft);
+                document.getElementById('countdown').textContent = formatTime(timeLeft);
                 
                 // Start timer
                 timerInterval = setInterval(updateTimer, 1000);
@@ -196,8 +196,12 @@
             }
         }
 
+        function startCountdown() {
+            loadTimeLeft();
+        }
+
         // Initialize timer when page loads
-        window.addEventListener('load', loadTimeLeft);
+        document.addEventListener('DOMContentLoaded', startCountdown);
     </script>
 </body>
 </html>

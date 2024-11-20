@@ -623,65 +623,83 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Timer functionality
 let sessionTime = 900; // 15 minutes in seconds
+let timerInterval = null;
 const countdownElement = document.getElementById('countdown');
-const username = localStorage.getItem('username');
 
 // Start countdown timer
 async function startCountdown() {
     // Get initial time from server
-    try {
-        const response = await fetch(`/api/time-left/${username}`);
-        if (!response.ok) {
-            throw new Error('Failed to get time from server');
+    const username = localStorage.getItem('username');
+    if (username) {
+        try {
+            const response = await fetch(`/api/time-left/${username}`);
+            if (response.ok) {
+                const data = await response.json();
+                sessionTime = data.timeLeft;
+            }
+        } catch (error) {
+            console.error('Error getting initial time:', error);
         }
-        const data = await response.json();
-        sessionTime = data.timeLeft;
-    } catch (error) {
-        console.error('Error getting initial time:', error);
-        // Keep default time if server request fails
     }
 
-    const endTime = Date.now() + (sessionTime * 1000);
+    updateTimerDisplay(sessionTime);
     
-    const timer = setInterval(async () => {
-        const now = Date.now();
-        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
-        
-        // Update display
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        // Sync with server every 30 seconds or when time is up
-        if (timeLeft % 30 === 0 || timeLeft === 0) {
-            try {
-                const response = await fetch('/api/update-time', {
+    // Clear any existing interval
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+
+    timerInterval = setInterval(() => {
+        if (sessionTime > 0) {
+            sessionTime--;
+            updateTimerDisplay(sessionTime);
+            
+            // Sync with server every 30 seconds or when time is up
+            if (sessionTime % 30 === 0 || sessionTime === 0) {
+                fetch('/api/update-time', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        username,
-                        timeLeft
+                        username: localStorage.getItem('username'),
+                        timeLeft: sessionTime
                     })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to update time on server');
-                }
-            } catch (error) {
-                console.error('Error syncing time:', error);
+                }).catch(error => console.error('Error updating time:', error));
             }
-        }
-        
-        // Handle time expiration
-        if (timeLeft === 0) {
-            clearInterval(timer);
-            alert('Your session has expired!');
-            window.location.href = '/';
+
+            if (sessionTime === 0) {
+                clearInterval(timerInterval);
+                window.location.href = '/';
+            }
         }
     }, 1000);
 }
 
-// Initialize timer when page loads
-document.addEventListener('DOMContentLoaded', startCountdown);
+// Update timer display
+function updateTimerDisplay(timeLeft) {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    if (countdownElement) {
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Pause timer when tab is not visible
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // User left the page, clear the interval
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    } else {
+        // User is back, restart the countdown
+        startCountdown();
+    }
+});
+
+// Initialize timer when page loads if we're on web.html
+if (window.location.pathname.includes('web.html')) {
+    document.addEventListener('DOMContentLoaded', startCountdown);
+}
