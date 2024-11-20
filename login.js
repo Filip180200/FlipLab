@@ -69,12 +69,23 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
     event.preventDefault();
 
     const formData = {
-        firstName: document.getElementById('firstName').value,
-        lastName: document.getElementById('lastName').value,
+        firstName: document.getElementById('firstName').value.trim(),
+        lastName: document.getElementById('lastName').value.trim(),
         age: parseInt(document.getElementById('age').value),
         gender: document.getElementById('gender').value,
         termsAccepted: document.getElementById('terms').checked
     };
+
+    // Client-side validation
+    if (formData.age < 18) {
+        alert('You must be at least 18 years old to register');
+        return;
+    }
+
+    if (!formData.firstName || !formData.lastName) {
+        alert('First name and last name are required');
+        return;
+    }
 
     try {
         const response = await fetch('/api/register', {
