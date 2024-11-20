@@ -187,20 +187,22 @@ function addSingleComment(comment, scrollToBottom = true) {
 function createCommentElement(comment) {
     const commentElement = document.createElement('div');
     commentElement.classList.add('chat-message');
-    commentElement.dataset.commentId = comment.id;
 
-    // Avatar
+    // Check if this user is reported by the current user
+    const currentUser = localStorage.getItem('username') || 'Anonymous';
+    if (reportedUsersMap.has(comment.username) && reportedUsersMap.get(comment.username).has(currentUser)) {
+        commentElement.classList.add('reported');
+    }
+
     const avatar = document.createElement('img');
     avatar.src = comment.avatar_url || DEFAULT_AVATAR;
     avatar.className = 'chat-avatar';
     avatar.alt = `${comment.username}'s avatar`;
     avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
 
-    // Message content wrapper
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'message-content-wrapper';
 
-    // Message header
     const header = document.createElement('div');
     header.className = 'message-header';
 
@@ -209,12 +211,10 @@ function createCommentElement(comment) {
     username.textContent = comment.username;
     username.onclick = () => openReportModal(comment.username);
 
-    // Message content
     const content = document.createElement('div');
     content.className = 'message-content';
     content.textContent = comment.comment;
 
-    // Assemble the elements
     header.appendChild(username);
     contentWrapper.appendChild(header);
     contentWrapper.appendChild(content);
@@ -245,9 +245,6 @@ function createTextContainer(comment) {
 
     const messageText = document.createElement('p');
     messageText.classList.add('message');
-    if (reportedUsersMap.has(comment.username) && reportedUsersMap.get(comment.username).has(localStorage.getItem('username') || 'Anonymous')) {
-        messageText.classList.add('reported-message-' + (localStorage.getItem('username') || 'Anonymous').replace(/[^a-zA-Z0-9]/g, '-'));
-    }
     messageText.innerHTML = `<span class="username" style="cursor: pointer;">${comment.username}</span>: ${comment.comment}`.replace('> :', '>:');
     
     const usernameSpan = messageText.querySelector('.username');
@@ -366,12 +363,12 @@ async function reportUser(username) {
         }
         reportedUsersMap.get(username).add(reportingUsername);
 
-        // Mark user's messages as reported only for the current user
+        // Mark user's messages as reported
         const userMessages = document.querySelectorAll('.chat-message');
         userMessages.forEach(message => {
             const messageUsername = message.querySelector('.username').textContent;
             if (messageUsername === username) {
-                message.classList.add('reported-message-' + reportingUsername.replace(/[^a-zA-Z0-9]/g, '-'));
+                message.classList.add('reported');
             }
         });
 

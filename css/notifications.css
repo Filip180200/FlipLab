@@ -105,3 +105,14 @@
     max-width: 500px;
     z-index: 1000;
 }
+
+/* Reported Message Styles */
+.chat-message.reported {
+    opacity: 0.5;
+    color: #888;
+}
+
+.chat-message.reported .username,
+.chat-message.reported .message-content {
+    color: #888;
+}
