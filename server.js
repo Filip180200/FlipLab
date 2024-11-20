@@ -304,6 +304,20 @@ app.get('/api/check-username/:username', async (req, res) => {
     }
 });
 
+// Get all users with their remaining time
+app.get('/api/users-time', async (req, res) => {
+    try {
+        const result = await executeQuery(
+            'SELECT username, time_left FROM users ORDER BY time_left DESC',
+            []
+        );
+        res.json(result);
+    } catch (error) {
+        console.error('Error getting users time:', error);
+        res.status(500).json({ error: 'Failed to get users time' });
+    }
+});
+
 // Routes
 app.get('/api/comments', getComments);
 app.get('/api/new-comments', getNewComments);

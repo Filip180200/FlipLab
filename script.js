@@ -700,15 +700,27 @@ document.addEventListener('visibilitychange', () => {
                     username: username,
                     timeLeft: sessionTime
                 })
-            }).catch(error => console.error('Error saving time:', error));
-        }
-        // Clear the interval
-        if (timerInterval) {
-            clearInterval(timerInterval);
-            timerInterval = null;
+            })
+            .then(() => {
+                // Clear interval and redirect to thank-you page
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                localStorage.removeItem('username'); // Clear username from storage
+                window.location.href = '/thank-you.html';
+            })
+            .catch(error => console.error('Error saving time:', error));
         }
     }
 });
+
+// Prevent going back to web.html if session is ended
+if (window.location.pathname.includes('web.html')) {
+    if (!localStorage.getItem('username')) {
+        window.location.href = '/';
+    }
+}
 
 // Initialize timer when page loads if we're on web.html and when page becomes visible
 if (window.location.pathname.includes('web.html')) {
