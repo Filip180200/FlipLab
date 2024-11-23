@@ -16,15 +16,22 @@
     width: 100%;
 }
 
+/* Avatar Preview and Editor Styles */
 .avatar-preview {
-    width: 100px;
-    height: 100px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
+    overflow: hidden;
     margin: 10px auto;
-    background-color: #f0f0f0;
-    background-size: cover;
-    background-position: center;
-    border: 2px solid var(--color-primary);
+    border: 2px solid #ddd;
+    position: relative;
+    background: #f0f0f0;
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 #avatar {
@@ -55,4 +62,115 @@
 
 .auth-form::-webkit-scrollbar-thumb:hover {
     background: var(--color-primary-dark);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.image-container {
+    max-height: 400px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+#image-to-crop {
+    max-width: 100%;
+    display: block;
+}
+
+.editor-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.editor-btn {
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.editor-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background-color: #9e9e9e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary:hover, .btn-secondary:hover {
+    opacity: 0.9;
+}
+
+/* Cropper.js custom styles */
+.cropper-view-box,
+.cropper-face {
+    border-radius: 50%;
 }
