@@ -168,9 +168,7 @@ form.addEventListener('submit', async function(e) {
     const lastName = document.getElementById('lastName').value.trim();
     const age = document.getElementById('age').value;
     const gender = document.getElementById('gender').value;
-    const username = document.getElementById('username').value.trim();
     const termsAccepted = document.getElementById('terms').checked;
-    const avatarInput = document.getElementById('avatar');
 
     // Client-side validation
     if (!firstName || !lastName) {
@@ -178,13 +176,13 @@ form.addEventListener('submit', async function(e) {
         return;
     }
 
-    if (!username) {
-        showNotification('Username is required', 5);
+    if (parseInt(age) < 18) {
+        showNotification('You must be at least 18 years old to register', 5);
         return;
     }
 
-    if (parseInt(age) < 18) {
-        showNotification('You must be at least 18 years old to register', 5);
+    if (!gender) {
+        showNotification('Please select your gender', 5);
         return;
     }
 
@@ -194,7 +192,7 @@ form.addEventListener('submit', async function(e) {
     }
 
     if (!croppedImageData) {
-        showNotification('Profile picture is required', 5);
+        showNotification('Please upload and crop your profile picture', 5);
         return;
     }
 
@@ -209,7 +207,6 @@ form.addEventListener('submit', async function(e) {
         formData.append('lastName', lastName);
         formData.append('age', age);
         formData.append('gender', gender);
-        formData.append('username', username);
         formData.append('termsAccepted', termsAccepted);
         formData.append('avatar', blob, 'avatar.jpg');
 
@@ -243,6 +240,6 @@ form.addEventListener('submit', async function(e) {
 document.addEventListener('DOMContentLoaded', () => {
     const username = localStorage.getItem('username');
     if (username) {
-        window.location.href = '/web.html';
+        window.location.href = 'web.html';
     }
 });
