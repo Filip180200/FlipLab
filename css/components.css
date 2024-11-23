@@ -342,25 +342,7 @@
     background: var(--accent-hover);
 }
 
-/* Logo Styles */
-.logo-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 20px;
-}
 
-.logo-icon {
-    font-size: 24px;
-    color: var(--accent-primary);
-    animation: spin 2s linear infinite;
-}
-
-.site-name {
-    font-size: 24px;
-    font-weight: bold;
-    color: white;
-}
 
 /* Notification Types */
 .notification.success {
@@ -589,86 +571,26 @@
     font-weight: bold;
 }
 
-/* ==========================================================================
-   Authentication Components
-   ========================================================================== */
-.login-container {
+/* Logo Styles */
+.logo-container {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    min-height: 100vh;
-    width: 100%;
-    background-color: var(--bg-primary);
-    color: white;
-    padding: 20px;
-    box-sizing: border-box;
-    overflow-x: hidden;
-}
-
-.auth-form {
-    background-color: var(--bg-secondary);
-    padding: 30px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 400px;
-    margin: 20px auto;
-}
-
-/* ==========================================================================
-   Authentication Form Styles
-   ========================================================================== */
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group input, 
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    background-color: #333;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: white;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-}
-
-.auth-form button {
-    width: 100%;
-    padding: 12px;
-    background-color: var(--accent-primary);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.auth-form button:hover {
-    background-color: var(--accent-hover);
-}
-
-.auth-form a {
-    color: var(--accent-primary);
-    text-decoration: none;
-}
-
-.auth-form a:hover {
-    text-decoration: underline;
-}
-
-.test-info {
-    background-color: var(--accent-primary);
-    color: white;
+    gap: 10px;
     padding: 10px 20px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
 }
+
+.logo-icon {
+    font-size: 24px;
+    color: var(--accent-primary);
+    animation: spin 2s linear infinite;
+}
+
+.site-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+}
+
 
 /* ==========================================================================
    Thank You Page Components
