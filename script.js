@@ -652,14 +652,14 @@ function redirectToThankYou() {
 }
 
 // Add event listeners for page visibility and beforeunload
-document.addEventListener('visibilitychange', async () => {
+document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'hidden') {
-        await terminateSession();
+        localStorage.setItem('lastKnownTime', sessionTime);
     }
 });
 
-window.addEventListener('beforeunload', async (event) => {
-    await terminateSession();
+window.addEventListener('beforeunload', function() {
+    localStorage.setItem('lastKnownTime', sessionTime);
 });
 
 // Start countdown
@@ -805,26 +805,7 @@ document.addEventListener('visibilitychange', async () => {
     const username = localStorage.getItem('username');
     
     if (document.hidden) {
-        if (username && sessionTime > 0) {
-            try {
-                const response = await fetch('/api/update-time', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        timeLeft: Math.max(0, sessionTime)
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update time');
-                }
-            } catch (error) {
-                console.error('Error saving time:', error);
-            }
-        }
+        localStorage.setItem('lastKnownTime', sessionTime);
     } else {
         if (username) {
             try {

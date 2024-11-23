@@ -588,13 +588,17 @@ app.post('/api/feedback', async (req, res) => {
     try {
         const { username, feedback } = req.body;
         
-        const result = await executeQuery(
-            'UPDATE users SET feedback = $1 WHERE username = $2 RETURNING id',
+        const result = await pool.query(
+            'UPDATE users SET feedback = $1 WHERE username = $2 RETURNING *',
             [feedback, username]
         );
         
-        if (result.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
+        if (result.rows.length === 0) {
+            // If user not found, create a new record for anonymous feedback
+            await pool.query(
+                'INSERT INTO users (username, feedback) VALUES ($1, $2)',
+                [username, feedback]
+            );
         }
         
         res.json({ message: 'Feedback submitted successfully' });
