@@ -214,43 +214,45 @@ function addSingleComment(comment, scrollToBottom = true) {
 }
 
 function createCommentElement(comment) {
-    const commentElement = document.createElement('div');
-    commentElement.classList.add('chat-message');
+    const commentDiv = document.createElement('div');
+    commentDiv.className = 'chat-message';
+    commentDiv.setAttribute('data-comment-id', comment.id);
 
-    // Check if this user is reported by the current user
-    const currentUser = localStorage.getItem('username') || 'Anonymous';
-    if (reportedUsersMap.has(comment.username) && reportedUsersMap.get(comment.username).has(currentUser)) {
-        commentElement.classList.add('reported');
-    }
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'chat-avatar';
+    avatarImg.src = comment.avatar_url || DEFAULT_AVATAR;
+    avatarImg.alt = 'User Avatar';
 
-    const avatar = document.createElement('img');
-    avatar.src = comment.avatar_url || DEFAULT_AVATAR;
-    avatar.className = 'chat-avatar';
-    avatar.alt = `${comment.username}'s avatar`;
-    avatar.onerror = () => avatar.src = DEFAULT_AVATAR;
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'chat-content';
 
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'message-content-wrapper';
+    const usernameSpan = document.createElement('span');
+    usernameSpan.className = 'username';
+    usernameSpan.textContent = comment.username;
 
-    const header = document.createElement('div');
-    header.className = 'message-header';
+    const timestampSpan = document.createElement('span');
+    timestampSpan.className = 'timestamp';
+    const commentDate = new Date(comment.timestamp);
+    timestampSpan.textContent = commentDate.toLocaleTimeString();
 
-    const username = document.createElement('span');
-    username.className = 'username';
-    username.textContent = comment.username;
-    username.onclick = () => openReportModal(comment.username);
+    const messageP = document.createElement('p');
+    messageP.className = 'message';
+    messageP.textContent = comment.comment;
 
-    const content = document.createElement('div');
-    content.className = 'message-content';
-    content.textContent = comment.comment;
+    const reportBtn = document.createElement('button');
+    reportBtn.className = 'report-btn';
+    reportBtn.innerHTML = '<i class="fas fa-flag"></i>';
+    reportBtn.title = 'Report user';
 
-    header.appendChild(username);
-    contentWrapper.appendChild(header);
-    contentWrapper.appendChild(content);
-    commentElement.appendChild(avatar);
-    commentElement.appendChild(contentWrapper);
+    contentDiv.appendChild(usernameSpan);
+    contentDiv.appendChild(timestampSpan);
+    contentDiv.appendChild(messageP);
+    contentDiv.appendChild(reportBtn);
 
-    return commentElement;
+    commentDiv.appendChild(avatarImg);
+    commentDiv.appendChild(contentDiv);
+
+    return commentDiv;
 }
 
 // Funkcje raportu użytkownika

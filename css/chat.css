@@ -63,6 +63,32 @@
     color: var(--text-primary);
 }
 
+.chat-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.username {
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.timestamp {
+    color: var(--color-muted);
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.message {
+    color: var(--color-text);
+    margin-top: 4px;
+    word-break: break-word;
+}
+
 /* Reported message styles */
 .chat-message.reported {
     opacity: 0.6;

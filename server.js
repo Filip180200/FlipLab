@@ -201,9 +201,19 @@ const addComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Please wait before posting the same comment again' });
         }
 
-        const query = 'INSERT INTO comments (username, comment) VALUES ($1, $2)';
-        await executeQuery(query, [username, comment]);
-        res.status(201).json({ message: 'Comment added successfully' });
+        // Insert comment with current timestamp and return the inserted row
+        const query = `
+            INSERT INTO comments (username, comment, timestamp) 
+            VALUES ($1, $2, NOW()) 
+            RETURNING id, username, comment, timestamp
+        `;
+        const result = await executeQuery(query, [username, comment]);
+        const newComment = result[0];
+        
+        res.status(201).json({ 
+            message: 'Comment added successfully',
+            comment: newComment
+        });
     } catch (err) {
         next(err);
     }
