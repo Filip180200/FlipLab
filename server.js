@@ -364,16 +364,14 @@ const addSimulatedComment = async (req, res, next) => {
 app.get('/api/time-left/:username', async (req, res) => {
     try {
         const { username } = req.params;
-        const result = await executeQuery(
-            'SELECT time_left FROM users WHERE username = $1',
-            [username]
-        );
+        const query = 'SELECT time_left FROM users WHERE username = $1';
+        const result = await executeQuery(query, [username]);
         
-        if (result.length > 0) {
-            res.json({ timeLeft: result[0].time_left });
-        } else {
-            res.status(404).json({ error: 'User not found' });
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
         }
+        
+        res.json({ timeLeft: result[0].time_left });
     } catch (error) {
         console.error('Error getting time:', error);
         res.status(500).json({ error: 'Failed to get time' });
@@ -384,22 +382,14 @@ app.get('/api/time-left/:username', async (req, res) => {
 app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
+        const query = 'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left';
+        const result = await executeQuery(query, [timeLeft, username]);
         
-        if (timeLeft < 0) {
-            return res.status(400).json({ error: 'Time left cannot be negative' });
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
         }
-
-        const result = await executeQuery(
-            'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
-            [Math.max(0, timeLeft), username]
-        );
         
-        if (result.length > 0) {
-            // If the update was successful, return the updated time
-            res.json({ timeLeft: result[0].time_left });
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
+        res.json({ timeLeft: result[0].time_left });
     } catch (error) {
         console.error('Error updating time:', error);
         res.status(500).json({ error: 'Failed to update time' });
@@ -544,14 +534,51 @@ app.get('/api/users-time', async (req, res) => {
     }
 });
 
-// Routes
+// Comments endpoints
 app.get('/api/comments', getComments);
 app.get('/api/new-comments', getNewComments);
 app.post('/api/comment', addComment);
-app.get('/api/user/:username', getUserData);
-app.get('/api/user/:username/last-comments', getLastThreeComments);
-app.post('/api/report', reportUser);
+app.get('/api/user-comments/:username', getLastThreeComments);
 app.get('/api/simulated_comments', getSimulatedComments);
+
+// Time management endpoints
+app.get('/api/time-left/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const query = 'SELECT time_left FROM users WHERE username = $1';
+        const result = await executeQuery(query, [username]);
+        
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ timeLeft: result[0].time_left });
+    } catch (error) {
+        console.error('Error getting time left:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/update-time', async (req, res) => {
+    try {
+        const { username, timeLeft } = req.body;
+        const query = 'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left';
+        const result = await executeQuery(query, [timeLeft, username]);
+        
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ timeLeft: result[0].time_left });
+    } catch (error) {
+        console.error('Error updating time:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Routes
+app.get('/api/user/:username', getUserData);
+app.post('/api/report', reportUser);
 app.post('/api/simulated_comment', addSimulatedComment);
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));

@@ -105,34 +105,84 @@ function showNotification(message, type = 'info') {
 // Funkcje zarządzania komentarzami
 async function loadComments(isInitialLoad = false) {
     try {
-        // Only load simulated comments on initial load
+        const chatMessages = document.querySelector('.chat-messages');
+        if (!chatMessages) return;
+
         if (isInitialLoad) {
-            const simulatedComments = await fetch('/api/simulated_comments').then(res => res.json());
-            const chatMessages = document.querySelector('.chat-messages');
+            // Clear existing comments
             chatMessages.innerHTML = '';
             displayedCommentIds.clear();
-            
-            // Schedule simulated comments
-            if (!simulatedCommentsScheduled && simulatedComments.length > 0) {
-                simulatedCommentsScheduled = true;
-                simulatedComments.forEach(comment => {
-                    setTimeout(() => {
-                        if (!displayedCommentIds.has(comment.id)) {
-                            const commentElement = createCommentElement(comment);
-                            chatMessages.appendChild(commentElement);
-                            displayedCommentIds.add(comment.id);
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
-                        }
-                    }, comment.delay * 1000);
-                });
-            }
 
-            // Start polling for new real-time comments
+            // Load initial comments
+            const response = await fetch(`${API_URL}/api/comments`);
+            const comments = await response.json();
+            
+            comments.forEach(comment => {
+                if (!displayedCommentIds.has(comment.id)) {
+                    const commentElement = createCommentElement(comment);
+                    chatMessages.appendChild(commentElement);
+                    displayedCommentIds.add(comment.id);
+                    addCommentToCache(comment.username, comment);
+                }
+            });
+
+            // Start real-time updates
             startRealTimeComments();
         }
     } catch (error) {
         console.error('Error loading comments:', error);
+        showNotification('Error loading comments. Please refresh the page.', 'error');
     }
+}
+
+async function addComment(event) {
+    event.preventDefault();
+    
+    const commentInput = document.getElementById('comment');
+    const comment = commentInput.value.trim();
+    const username = localStorage.getItem('username');
+    
+    if (!comment || !username) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/comment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username,
+                comment
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to add comment');
+        }
+
+        // Clear input after successful submission
+        commentInput.value = '';
+        
+        // Add comment to UI immediately
+        const newComment = await response.json();
+        const chatMessages = document.querySelector('.chat-messages');
+        const commentElement = createCommentElement(newComment);
+        chatMessages.appendChild(commentElement);
+        displayedCommentIds.add(newComment.id);
+        addCommentToCache(username, newComment);
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        showNotification('Error adding comment. Please try again.', 'error');
+    }
+}
+
+// Initialize comment form
+const commentForm = document.getElementById('commentForm');
+if (commentForm) {
+    commentForm.addEventListener('submit', addComment);
 }
 
 // New function to handle real-time comments
@@ -172,32 +222,6 @@ async function startRealTimeComments() {
             console.error('Error fetching new comments:', error);
         }
     }, 2000);
-}
-
-async function addComment(event) {
-    event.preventDefault();
-    
-    const commentInput = document.getElementById('comment');
-    const comment = commentInput.value.trim();
-    const nickname = localStorage.getItem('username');
-    
-    if (!comment) return;
-    
-    try {
-        // Send comment to server
-        await postData('/api/comment', {
-            username: nickname,
-            comment: comment
-        });
-
-        // Clear input after successful submission
-        commentInput.value = '';
-        
-        // Don't add the comment immediately - it will be fetched by the real-time update
-    } catch (error) {
-        console.error('Error adding comment:', error);
-        showNotification('Error adding comment. Please try again.');
-    }
 }
 
 function addSingleComment(comment, scrollToBottom = true) {
@@ -546,23 +570,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle comment form
-    const commentForm = document.getElementById('commentForm');
-    if (commentForm) {
-        commentForm.addEventListener('submit', addComment);
-    }
-
-    // Change file input language to English
-    const fileInput = document.getElementById('avatar');
-    fileInput.addEventListener('change', function(e) {
-        const fileName = e.target.value.split('\\').pop();
-        if (fileName) {
-            e.target.nextElementSibling.textContent = fileName;
-        } else {
-            e.target.nextElementSibling.textContent = 'No file chosen';
-        }
-    });
-
     // Initialize app
     initializeApp();
 });
@@ -614,68 +621,57 @@ const countdownElement = document.getElementById('countdown');
 
 // Start countdown timer
 async function startCountdown() {
-    // Get initial time from server
     const username = localStorage.getItem('username');
-    if (username) {
-        try {
-            const response = await fetch(`/api/time-left/${username}`);
-            if (response.ok) {
-                const data = await response.json();
-                sessionTime = data.timeLeft;
+    if (!username) return;
 
-                // If time is up, redirect to thank-you page
-                if (sessionTime <= 0) {
-                    localStorage.removeItem('username');
-                    window.location.href = '/thank-you.html';
-                    return;
-                }
-            }
-        } catch (error) {
-            console.error('Error getting initial time:', error);
-        }
-    }
+    try {
+        const response = await fetch(`${API_URL}/api/time-left/${username}`);
+        const data = await response.json();
+        let timeLeft = data.timeLeft;
 
-    updateTimerDisplay(sessionTime);
-    
-    // Clear any existing interval
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
+        // Update timer display immediately
+        updateTimerDisplay(timeLeft);
 
-    timerInterval = setInterval(() => {
-        if (sessionTime > 0) {
-            sessionTime--;
-            updateTimerDisplay(sessionTime);
+        // Start the countdown
+        const timerInterval = setInterval(async () => {
+            timeLeft--;
             
-            // Sync with server every 30 seconds or when time is up
-            if (sessionTime % 30 === 0 || sessionTime === 0) {
-                fetch('/api/update-time', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: localStorage.getItem('username'),
-                        timeLeft: sessionTime
-                    })
-                }).catch(error => console.error('Error updating time:', error));
-            }
-
-            if (sessionTime === 0) {
+            if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 localStorage.removeItem('username');
                 window.location.href = '/thank-you.html';
+                return;
             }
-        }
-    }, 1000);
+
+            // Update display
+            updateTimerDisplay(timeLeft);
+
+            // Sync with server every minute
+            if (timeLeft % 60 === 0) {
+                try {
+                    await fetch(`${API_URL}/api/update-time`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, timeLeft })
+                    });
+                } catch (error) {
+                    console.error('Error syncing time with server:', error);
+                }
+            }
+        }, 1000);
+    } catch (error) {
+        console.error('Error starting countdown:', error);
+    }
 }
 
-// Update timer display
 function updateTimerDisplay(timeLeft) {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
-    if (countdownElement) {
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const timerElement = document.getElementById('countdown');
+    if (timerElement) {
+        timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 }
 
