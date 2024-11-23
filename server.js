@@ -123,7 +123,15 @@ const initializeDatabase = async () => {
                 gender VARCHAR(50),
                 time_left INTEGER DEFAULT 3600,
                 terms_accepted BOOLEAN DEFAULT false,
-                avatar_url TEXT
+                avatar_url TEXT,
+                feedback TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS reports (
+                id SERIAL PRIMARY KEY,
+                reported_username VARCHAR(255) NOT NULL,
+                reporting_username VARCHAR(255) NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
         console.log('Database tables initialized successfully');
@@ -572,6 +580,27 @@ app.post('/api/terminate-session', async (req, res) => {
     } catch (error) {
         console.error('Error terminating session:', error);
         res.status(500).json({ error: 'Failed to terminate session' });
+    }
+});
+
+// Add feedback endpoint
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { username, feedback } = req.body;
+        
+        const result = await executeQuery(
+            'UPDATE users SET feedback = $1 WHERE username = $2 RETURNING id',
+            [feedback, username]
+        );
+        
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ message: 'Feedback submitted successfully' });
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        res.status(500).json({ error: 'Failed to save feedback' });
     }
 });
 
