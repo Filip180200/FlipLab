@@ -154,6 +154,8 @@
             history.pushState(null, null, document.URL);
         });
 
+        const API_URL = 'https://fliplab.onrender.com';
+
         // Handle feedback submission
         async function submitFeedback(event) {
             event.preventDefault();
@@ -167,7 +169,7 @@
             }
 
             try {
-                const response = await fetch('/api/feedback', {
+                const response = await fetch(`${API_URL}/api/feedback`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -178,19 +180,18 @@
                     })
                 });
 
-                const data = await response.json();
-
                 if (response.ok) {
+                    const data = await response.json();
                     showMessage('Thank you for your feedback!', 'success');
                     document.getElementById('feedback').value = '';
-                    setTimeout(() => {
-                        document.getElementById('feedbackForm').style.display = 'none';
-                    }, 3000);
+                    document.getElementById('feedbackForm').style.display = 'none';
                 } else {
-                    showMessage(data.error || 'Failed to submit feedback', 'error');
+                    const error = await response.text();
+                    showMessage(error || 'Failed to submit feedback', 'error');
                 }
             } catch (error) {
-                showMessage('Error submitting feedback', 'error');
+                console.error('Error submitting feedback:', error);
+                showMessage('Error connecting to server. Please try again later.', 'error');
             }
         }
 
@@ -203,7 +204,7 @@
             if (type === 'success') {
                 setTimeout(() => {
                     messageElement.style.display = 'none';
-                }, 5000);
+                }, 3000);
             }
         }
     </script>
