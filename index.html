@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
     <title>FlipLab - Stream Viewer</title>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/layout.css">
@@ -31,40 +32,49 @@
         <!-- Registration Form -->
         <form id="registerForm" class="auth-form">
             <h2>Create Account</h2>
-            <div class="form-group">
-                <label for="firstName">First Name:</label>
-                <input type="text" id="firstName" required>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="lastName">Last Name:</label>
-                <input type="text" id="lastName" required>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="age">Age:</label>
+                    <input type="number" id="age" min="18" max="120" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">Gender:</label>
+                    <select id="gender" required>
+                        <option value="">Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
+
+            <div class="form-group full-width">
                 <label for="avatar">Profile Picture (required):</label>
-                <input type="file" id="avatar" accept="image/*" required>
+                <input type="file" id="avatar" accept="image/*" required lang="en">
                 <div id="avatar-preview" class="avatar-preview">
                     <img id="avatar-image" style="display: none;">
                 </div>
             </div>
-            <div class="form-group">
-                <label for="age">Age:</label>
-                <input type="number" id="age" min="18" max="120" required>
-            </div>
-            <div class="form-group">
-                <label>Gender:</label>
-                <select id="gender" required>
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>
+
+            <div class="form-group terms-group">
+                <label class="terms-label">
                     <input type="checkbox" id="terms" required>
                     I accept the terms and conditions
                 </label>
             </div>
+
             <button type="submit">Create Account</button>
         </form>
     </div>

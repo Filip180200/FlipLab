@@ -552,6 +552,17 @@ document.addEventListener('DOMContentLoaded', () => {
         commentForm.addEventListener('submit', addComment);
     }
 
+    // Change file input language to English
+    const fileInput = document.getElementById('avatar');
+    fileInput.addEventListener('change', function(e) {
+        const fileName = e.target.value.split('\\').pop();
+        if (fileName) {
+            e.target.nextElementSibling.textContent = fileName;
+        } else {
+            e.target.nextElementSibling.textContent = 'No file chosen';
+        }
+    });
+
     // Initialize app
     initializeApp();
 });
