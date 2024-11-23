@@ -124,7 +124,8 @@ const initializeDatabase = async () => {
                 time_left INTEGER DEFAULT 3600,
                 terms_accepted BOOLEAN DEFAULT false,
                 avatar_url TEXT,
-                feedback TEXT
+                feedback TEXT,
+                session_ended BOOLEAN DEFAULT false
             );
 
             CREATE TABLE IF NOT EXISTS reports (
@@ -363,15 +364,22 @@ app.get('/api/time-left/:username', async (req, res) => {
     try {
         const { username } = req.params;
         const result = await executeQuery(
-            'SELECT time_left FROM users WHERE username = $1',
+            'SELECT time_left, session_ended FROM users WHERE username = $1',
             [username]
         );
-        
-        if (result.length > 0) {
-            res.json({ timeLeft: result[0].time_left });
-        } else {
-            res.status(404).json({ error: 'User not found' });
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
         }
+
+        const { time_left, session_ended } = result[0];
+
+        // If session is ended, return 0 time left
+        if (session_ended) {
+            return res.json({ timeLeft: 0 });
+        }
+
+        return res.json({ timeLeft: time_left });
     } catch (error) {
         console.error('Error getting time:', error);
         res.status(500).json({ error: 'Failed to get time' });
@@ -382,7 +390,7 @@ app.get('/api/time-left/:username', async (req, res) => {
 app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
-        
+
         if (timeLeft < 0) {
             return res.status(400).json({ error: 'Time left cannot be negative' });
         }
@@ -391,7 +399,7 @@ app.post('/api/update-time', async (req, res) => {
             'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
             [Math.max(0, timeLeft), username]
         );
-        
+
         if (result.length > 0) {
             // If the update was successful, return the updated time
             res.json({ timeLeft: result[0].time_left });
@@ -427,7 +435,7 @@ app.post('/api/update-time/beacon', async (req, res) => {
         }
 
         const { username, timeLeft } = data;
-        
+
         if (!username || timeLeft === undefined) {
             console.error('Missing required beacon data fields:', data);
             return res.status(400).end();
@@ -440,7 +448,7 @@ app.post('/api/update-time/beacon', async (req, res) => {
             'UPDATE users SET time_left = $1 WHERE username = $2',
             [validTimeLeft, username]
         );
-        
+
         res.status(200).end();
     } catch (error) {
         console.error('Error handling beacon time update:', error);
@@ -547,21 +555,15 @@ app.get('/api/session-status/:username', async (req, res) => {
     try {
         const { username } = req.params;
         const result = await executeQuery(
-            'SELECT time_left FROM users WHERE username = $1',
+            'SELECT session_ended FROM users WHERE username = $1',
             [username]
         );
-        
+
         if (result.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const timeLeft = result[0].time_left;
-        const isSessionValid = timeLeft > 0;
-        
-        res.json({ 
-            isValid: isSessionValid,
-            timeLeft: timeLeft
-        });
+        res.json({ session_ended: result[0].session_ended });
     } catch (error) {
         console.error('Error checking session status:', error);
         res.status(500).json({ error: 'Failed to check session status' });
@@ -571,11 +573,14 @@ app.get('/api/session-status/:username', async (req, res) => {
 // Add session termination endpoint
 app.post('/api/terminate-session', async (req, res) => {
     try {
-        const { username } = req.body;
+        const { username, timeLeft } = req.body;
+
+        // Update the user's time_left and set session_ended to true
         await executeQuery(
-            'UPDATE users SET time_left = 0 WHERE username = $1',
-            [username]
+            'UPDATE users SET time_left = $1, session_ended = true WHERE username = $2',
+            [timeLeft, username]
         );
+
         res.json({ message: 'Session terminated successfully' });
     } catch (error) {
         console.error('Error terminating session:', error);
@@ -587,12 +592,12 @@ app.post('/api/terminate-session', async (req, res) => {
 app.post('/api/feedback', async (req, res) => {
     try {
         const { username, feedback } = req.body;
-        
+
         const result = await pool.query(
             'UPDATE users SET feedback = $1 WHERE username = $2 RETURNING *',
             [feedback, username]
         );
-        
+
         if (result.rows.length === 0) {
             // If user not found, create a new record for anonymous feedback
             await pool.query(
@@ -600,7 +605,7 @@ app.post('/api/feedback', async (req, res) => {
                 [username, feedback]
             );
         }
-        
+
         res.json({ message: 'Feedback submitted successfully' });
     } catch (error) {
         console.error('Error saving feedback:', error);
