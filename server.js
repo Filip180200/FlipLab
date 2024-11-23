@@ -444,43 +444,49 @@ app.post('/api/update-time/beacon', async (req, res) => {
 app.post('/api/register', upload.single('avatar'), async (req, res) => {
     try {
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
-        
-        // Validate age
-        if (age < 18) {
-            return res.status(400).json({ error: 'You must be at least 18 years old to register' });
+
+        // Basic validation
+        if (!firstName || !lastName || !age || !gender || !termsAccepted) {
+            return res.status(400).json({ error: 'All fields are required' });
         }
 
-        // Capitalize first letter of each name and make the rest lowercase
+        // Age validation
+        if (parseInt(age) < 18) {
+            return res.status(400).json({ error: 'You must be at least 18 years old' });
+        }
+
+        // Capitalize first letter of each name
         const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
         const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
+        const username = `${formattedFirstName} ${formattedLastName}`;
 
         // Check if user exists
-        const checkResult = await executeQuery(
+        const existingUser = await executeQuery(
             'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists',
-            [`${formattedFirstName} ${formattedLastName}`]
+            [username]
         );
-        
-        if (checkResult[0].exists) {
-            return res.status(400).json({ error: 'A user with this exact name already exists' });
+
+        if (existingUser[0].exists) {
+            return res.status(400).json({ error: 'A user with this name already exists' });
         }
 
         // Get avatar URL if uploaded
         const avatarUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-        // Insert new user with default time_left
+        // Insert new user
         const result = await executeQuery(
             `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING username`,
             [
-                `${formattedFirstName} ${formattedLastName}`,
+                username,
                 formattedFirstName,
                 formattedLastName,
                 age,
                 gender,
                 termsAccepted === 'true',
                 avatarUrl,
-                900
+                900 // 15 minutes in seconds
             ]
         );
 
