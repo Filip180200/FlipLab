@@ -209,6 +209,7 @@ form.addEventListener('submit', async function(e) {
         formData.append('gender', gender);
         formData.append('termsAccepted', termsAccepted);
         formData.append('avatar', blob, 'avatar.jpg');
+        formData.append('time_left', '900'); // Adding initial time_left value of 900 seconds (15 minutes)
 
         // Send registration request
         const registerResponse = await fetch('/api/register', {

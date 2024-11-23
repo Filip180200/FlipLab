@@ -499,7 +499,7 @@ function setupChannelInteractions() {
 }
 
 // Timer functionality
-let sessionTime = 900; // 15 minutes in seconds
+let sessionTime = 0; // Will be set from API
 let timerInterval = null;
 const countdownElement = document.getElementById('countdown');
 
