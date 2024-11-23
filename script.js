@@ -396,5 +396,370 @@ function closeReportModal() {
     overlay.classList.remove('active');
 }
 
-// Funkcje komentarzy użytkownika
-// ... (rest of the code remains the same)
+// YouTube Player API
+function onYouTubeIframeAPIReady() {
+    console.log('YouTube API Ready');
+    player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: VIDEO_ID,
+        playerVars: {
+            'playsinline': 1,
+            'autoplay': 1,
+            'controls': 1,
+            'modestbranding': 1,
+            'rel': 0,
+            'showinfo': 0,
+            'fs': 1
+        },
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
+
+    // Make sure buttons are visible after player loads
+    const videoContainer = document.querySelector('.video-container');
+    if (videoContainer) {
+        videoContainer.style.display = 'flex';
+        videoContainer.style.flexDirection = 'column';
+    }
+}
+
+function onPlayerReady(event) {
+    console.log('Player Ready');
+    event.target.playVideo();
+}
+
+function onPlayerStateChange(event) {
+    console.log('Player State Changed:', event.data);
+}
+
+// Channel video IDs
+const channelVideos = {
+    'ChilledCow': 'jfKfPfyJRdk',
+    'pokimane': '5qap5aO4i9A',
+    'Faker': 'DWZIfsaIgtE',
+    'Dream': '21X5lGlDOfg'
+};
+
+// Channel setup functions
+function setupChannelInteractions() {
+    const channelItems = document.querySelectorAll('.channel-item');
+    channelItems.forEach(item => {
+        item.addEventListener('click', () => {
+            // Remove active class from all items
+            channelItems.forEach(i => i.classList.remove('active'));
+            // Add active class to clicked item
+            item.classList.add('active');
+
+            const channelName = item.querySelector('h4').textContent;
+            const gameName = item.querySelector('p').textContent;
+            const viewerCount = item.querySelector('.viewer-count').textContent;
+            const avatarSrc = item.querySelector('.channel-preview img').src;
+            const tags = item.querySelector('.tags').textContent.split('•').map(tag => tag.trim());
+
+            // Change video if player is ready
+            if (player && player.loadVideoById && channelVideos[channelName]) {
+                player.loadVideoById(channelVideos[channelName]);
+            }
+
+            // Update stream info
+            document.querySelector('.channel-name').textContent = channelName;
+            document.querySelector('.channel-game').textContent = gameName;
+            document.querySelector('.channel-avatar img').src = avatarSrc;
+            
+            // Update stream tags
+            const tagsContainer = document.querySelector('.stream-tags');
+            tagsContainer.innerHTML = '';
+            tags.forEach(tag => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'tag';
+                tagSpan.textContent = tag;
+                tagsContainer.appendChild(tagSpan);
+            });
+
+            // Update viewer count
+            document.querySelector('.viewers').innerHTML = `<i class="fas fa-user"></i> ${viewerCount} viewers`;
+
+            // Show notification
+            showNotification(`Switched to ${channelName}'s channel`);
+
+            // Reset follow/sub buttons
+            const followBtn = document.querySelector('.follow-btn');
+            const subscribeBtn = document.querySelector('.subscribe-btn');
+            followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
+            followBtn.style.background = '#3a3a3d';
+            followBtn.classList.remove('following');
+            subscribeBtn.innerHTML = '<i class="far fa-star"></i> Subscribe';
+            subscribeBtn.style.background = '#3a3a3d';
+            subscribeBtn.classList.remove('subscribed');
+        });
+    });
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Settings button notification
+    const settingsButton = document.querySelector('.settings-btn');
+    if (settingsButton) {
+        settingsButton.addEventListener('click', () => {
+            showNotification('Settings will be available in a future update!', 'info');
+        });
+    }
+
+    // Handle clicks for reporting
+    document.addEventListener('click', function(e) {
+        const reportModal = document.getElementById('reportModal');
+        const reportOverlay = document.querySelector('.report-overlay');
+
+        // Handle username clicks
+        if (e.target.classList.contains('username')) {
+            const messageEl = e.target.closest('.chat-message');
+            const username = messageEl.querySelector('.username').textContent;
+            const avatar = messageEl.querySelector('.chat-avatar').src;
+            openReportModal(username, avatar);
+        }
+
+        // Handle report button clicks
+        if (e.target.closest('.report-btn')) {
+            const messageEl = e.target.closest('.chat-message');
+            const username = messageEl.querySelector('.username').textContent;
+            const avatar = messageEl.querySelector('.chat-avatar').src;
+            openReportModal(username, avatar);
+        }
+
+        // Close on overlay click
+        if (e.target.classList.contains('report-overlay')) {
+            closeReportModal();
+        }
+
+        // Close on close button click
+        if (e.target.closest('.close-preview')) {
+            closeReportModal();
+        }
+
+        // Handle report submit
+        if (e.target.closest('.report-submit')) {
+            const username = reportModal.querySelector('#reportUsername').textContent;
+            reportUser(username);
+        }
+    });
+
+    // Handle comment form
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', addComment);
+    }
+
+    // Initialize app
+    initializeApp();
+});
+
+// Subscribe button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const subscribeBtn = document.querySelector('.subscribe-btn');
+    if (subscribeBtn) {
+        let isSubscribed = false;
+        subscribeBtn.addEventListener('click', function() {
+            isSubscribed = !isSubscribed;
+            if (isSubscribed) {
+                this.innerHTML = '<i class="fas fa-star"></i> Subscribed';
+                this.style.background = '#9147ff';  // Purple color when subscribed
+                showNotification('Thanks for subscribing!', 'success');
+            } else {
+                this.innerHTML = '<i class="far fa-star"></i> Subscribe';
+                this.style.background = '#3a3a3d';  // Default color
+                showNotification('Subscription cancelled', 'info');
+            }
+        });
+    }
+});
+
+// Follow button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const followBtn = document.querySelector('.follow-btn');
+    if (followBtn) {
+        let isFollowing = false;
+        followBtn.addEventListener('click', function() {
+            isFollowing = !isFollowing;
+            if (isFollowing) {
+                this.innerHTML = '<i class="fas fa-heart-broken"></i> Unfollow';
+                this.style.background = '#f00';  // Red color when following
+                showNotification('Thanks for following! You will now receive notifications when we go live.', 'success');
+            } else {
+                this.innerHTML = '<i class="fas fa-heart"></i> Follow';
+                this.style.background = '#3a3a3d';  // Default color
+                showNotification('You have unfollowed the channel', 'info');
+            }
+        });
+    }
+});
+
+// Timer functionality
+let sessionTime = 900; // 15 minutes in seconds
+let timerInterval = null;
+const countdownElement = document.getElementById('countdown');
+
+// Start countdown timer
+async function startCountdown() {
+    // Get initial time from server
+    const username = localStorage.getItem('username');
+    if (username) {
+        try {
+            const response = await fetch(`/api/time-left/${username}`);
+            if (response.ok) {
+                const data = await response.json();
+                sessionTime = data.timeLeft;
+
+                // If time is up, redirect to thank-you page
+                if (sessionTime <= 0) {
+                    localStorage.removeItem('username');
+                    window.location.href = '/thank-you.html';
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error getting initial time:', error);
+        }
+    }
+
+    updateTimerDisplay(sessionTime);
+    
+    // Clear any existing interval
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+
+    timerInterval = setInterval(() => {
+        if (sessionTime > 0) {
+            sessionTime--;
+            updateTimerDisplay(sessionTime);
+            
+            // Sync with server every 30 seconds or when time is up
+            if (sessionTime % 30 === 0 || sessionTime === 0) {
+                fetch('/api/update-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: localStorage.getItem('username'),
+                        timeLeft: sessionTime
+                    })
+                }).catch(error => console.error('Error updating time:', error));
+            }
+
+            if (sessionTime === 0) {
+                clearInterval(timerInterval);
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
+            }
+        }
+    }, 1000);
+}
+
+// Update timer display
+function updateTimerDisplay(timeLeft) {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    if (countdownElement) {
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Initialize function
+async function initializeApp() {
+    console.log('Initializing app...');
+    
+    // Start real-time comments
+    startRealTimeComments();
+    
+    // Setup channel interactions
+    setupChannelInteractions();
+    
+    // Load initial comments
+    loadComments(true);
+
+    // Start countdown
+    startCountdown();
+}
+
+// Prevent going back to web.html if session is ended
+window.addEventListener('load', async () => {
+    const username = localStorage.getItem('username');
+    if (!username) {
+        window.location.href = '/thank-you.html';
+        return;
+    }
+
+    // Check if time is still valid
+    try {
+        const response = await fetch(`/api/time-left/${username}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (!data.timeLeft || data.timeLeft <= 0) {
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
+                return;
+            }
+        } else {
+            localStorage.removeItem('username');
+            window.location.href = '/thank-you.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking time:', error);
+        localStorage.removeItem('username');
+        window.location.href = '/thank-you.html';
+        return;
+    }
+});
+
+// Handle page visibility change
+document.addEventListener('visibilitychange', async () => {
+    const username = localStorage.getItem('username');
+    
+    if (document.hidden) {
+        if (username && sessionTime > 0) {
+            try {
+                const response = await fetch('/api/update-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        timeLeft: Math.max(0, sessionTime)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update time');
+                }
+            } catch (error) {
+                console.error('Error saving time:', error);
+            }
+        }
+    } else {
+        if (username) {
+            try {
+                const response = await fetch(`/api/time-left/${username}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionTime = data.timeLeft;
+                    
+                    if (sessionTime <= 0) {
+                        localStorage.removeItem('username');
+                        window.location.href = '/thank-you.html';
+                        return;
+                    }
+                    
+                    startCountdown();
+                }
+            } catch (error) {
+                console.error('Error getting time:', error);
+            }
+        }
+    }
+});
