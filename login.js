@@ -64,25 +64,42 @@ function showNotification(message, duration = 15) {
     return notification;
 }
 
+// Handle avatar file selection and preview
+document.getElementById('avatar').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('avatar-preview');
+            preview.style.backgroundImage = `url(${e.target.result})`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
 // Handle registration form submission
 document.getElementById('registerForm').addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const formData = {
-        firstName: document.getElementById('firstName').value.trim(),
-        lastName: document.getElementById('lastName').value.trim(),
-        age: parseInt(document.getElementById('age').value),
-        gender: document.getElementById('gender').value,
-        termsAccepted: document.getElementById('terms').checked
-    };
+    const formData = new FormData();
+    formData.append('firstName', document.getElementById('firstName').value.trim());
+    formData.append('lastName', document.getElementById('lastName').value.trim());
+    formData.append('age', document.getElementById('age').value);
+    formData.append('gender', document.getElementById('gender').value);
+    formData.append('termsAccepted', document.getElementById('terms').checked);
+
+    const avatarFile = document.getElementById('avatar').files[0];
+    if (avatarFile) {
+        formData.append('avatar', avatarFile);
+    }
 
     // Client-side validation
-    if (formData.age < 18) {
+    if (parseInt(formData.get('age')) < 18) {
         alert('You must be at least 18 years old to register');
         return;
     }
 
-    if (!formData.firstName || !formData.lastName) {
+    if (!formData.get('firstName') || !formData.get('lastName')) {
         alert('First name and last name are required');
         return;
     }
@@ -90,10 +107,7 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
+            body: formData // Using FormData instead of JSON
         });
 
         if (!response.ok) {
@@ -102,12 +116,10 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
         }
 
         const data = await response.json();
-        // Store the username in localStorage
         localStorage.setItem('username', data.username);
-        // Redirect to main page
         window.location.href = '/web.html';
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Registration error:', error);
         alert(error.message);
     }
 });

@@ -10,3 +10,22 @@
 @import url('notifications.css');
 @import url('animations.css');
 @import url('channels.css');
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin: 10px auto;
+    background-color: #f0f0f0;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid var(--color-primary);
+}
+
+#avatar {
+    margin-top: 5px;
+}

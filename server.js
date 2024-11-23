@@ -4,6 +4,9 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
 const PORT = process.env.PORT || 3001;
 
@@ -33,6 +36,35 @@ if (process.env.DATABASE_URL) {
 
 // Express app initialization
 const app = express();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Not an image! Please upload an image.'), false);
+        }
+    }
+});
 
 // Middleware setup
 app.use(cors());
@@ -89,7 +121,8 @@ const initializeDatabase = async () => {
                 age INTEGER,
                 gender VARCHAR(50),
                 time_left INTEGER DEFAULT 3600,
-                terms_accepted BOOLEAN DEFAULT false
+                terms_accepted BOOLEAN DEFAULT false,
+                avatar_url TEXT
             );
         `);
         console.log('Database tables initialized successfully');
@@ -404,7 +437,7 @@ app.post('/api/update-time/beacon', async (req, res) => {
 });
 
 // Register new user
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', upload.single('avatar'), async (req, res) => {
     try {
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
         
@@ -427,11 +460,16 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: 'A user with this exact name already exists' });
         }
 
+        // Get avatar URL if uploaded
+        const avatarUrl = req.file ? 
+            `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : 
+            null;
+
         // Insert new user with default time_left
         await executeQuery(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 900]
+            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, avatarUrl, 900]
         );
 
         res.json({ 
