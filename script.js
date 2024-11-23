@@ -601,62 +601,146 @@ let sessionTime = 900; // 15 minutes in seconds
 let timerInterval = null;
 const countdownElement = document.getElementById('countdown');
 
-// Start countdown timer
-async function startCountdown() {
-    // Get initial time from server
+// Session management functions
+async function checkSessionStatus() {
+    const username = localStorage.getItem('username');
+    if (!username) {
+        redirectToThankYou();
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/session-status/${username}`);
+        const data = await response.json();
+
+        if (!data.isValid) {
+            await terminateSession();
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error checking session status:', error);
+        return false;
+    }
+}
+
+async function terminateSession() {
     const username = localStorage.getItem('username');
     if (username) {
         try {
-            const response = await fetch(`/api/time-left/${username}`);
-            if (response.ok) {
-                const data = await response.json();
-                sessionTime = data.timeLeft;
+            await fetch(`${API_URL}/api/terminate-session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username })
+            });
+        } catch (error) {
+            console.error('Error terminating session:', error);
+        }
+    }
+    
+    localStorage.removeItem('username');
+    redirectToThankYou();
+}
 
-                // If time is up, redirect to thank-you page
-                if (sessionTime <= 0) {
-                    localStorage.removeItem('username');
-                    window.location.href = '/thank-you.html';
-                    return;
+function redirectToThankYou() {
+    if (window.location.pathname !== '/thank-you.html') {
+        window.location.href = '/thank-you.html';
+    }
+}
+
+// Add event listeners for page visibility and beforeunload
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'hidden') {
+        await terminateSession();
+    }
+});
+
+window.addEventListener('beforeunload', async (event) => {
+    await terminateSession();
+});
+
+// Start countdown
+async function startCountdown() {
+    const username = localStorage.getItem('username');
+    if (!username) {
+        redirectToThankYou();
+        return;
+    }
+
+    // Initial session check
+    if (!await checkSessionStatus()) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/time-left/${username}`);
+        if (!response.ok) {
+            throw new Error('Failed to get time left');
+        }
+
+        const data = await response.json();
+        let timeLeft = data.timeLeft;
+
+        // If time is already up, redirect
+        if (timeLeft <= 0) {
+            await terminateSession();
+            return;
+        }
+
+        updateTimerDisplay(timeLeft);
+
+        // Clear any existing interval
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        // Start countdown
+        timerInterval = setInterval(async () => {
+            timeLeft--;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                await terminateSession();
+                return;
+            }
+
+            updateTimerDisplay(timeLeft);
+
+            // Sync with server every 30 seconds
+            if (timeLeft % 30 === 0) {
+                try {
+                    const response = await fetch(`${API_URL}/api/update-time`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username,
+                            timeLeft
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update time');
+                    }
+
+                    // Check session status periodically
+                    if (!await checkSessionStatus()) {
+                        clearInterval(timerInterval);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error updating time:', error);
                 }
             }
-        } catch (error) {
-            console.error('Error getting initial time:', error);
-        }
+        }, 1000);
+    } catch (error) {
+        console.error('Error starting countdown:', error);
+        redirectToThankYou();
     }
-
-    updateTimerDisplay(sessionTime);
-    
-    // Clear any existing interval
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
-
-    timerInterval = setInterval(() => {
-        if (sessionTime > 0) {
-            sessionTime--;
-            updateTimerDisplay(sessionTime);
-            
-            // Sync with server every 30 seconds or when time is up
-            if (sessionTime % 30 === 0 || sessionTime === 0) {
-                fetch('/api/update-time', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: localStorage.getItem('username'),
-                        timeLeft: sessionTime
-                    })
-                }).catch(error => console.error('Error updating time:', error));
-            }
-
-            if (sessionTime === 0) {
-                clearInterval(timerInterval);
-                localStorage.removeItem('username');
-                window.location.href = '/thank-you.html';
-            }
-        }
-    }, 1000);
 }
 
 // Update timer display

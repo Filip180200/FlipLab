@@ -534,6 +534,47 @@ app.get('/api/users-time', async (req, res) => {
     }
 });
 
+// Add session status endpoint
+app.get('/api/session-status/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT time_left FROM users WHERE username = $1',
+            [username]
+        );
+        
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const timeLeft = result[0].time_left;
+        const isSessionValid = timeLeft > 0;
+        
+        res.json({ 
+            isValid: isSessionValid,
+            timeLeft: timeLeft
+        });
+    } catch (error) {
+        console.error('Error checking session status:', error);
+        res.status(500).json({ error: 'Failed to check session status' });
+    }
+});
+
+// Add session termination endpoint
+app.post('/api/terminate-session', async (req, res) => {
+    try {
+        const { username } = req.body;
+        await executeQuery(
+            'UPDATE users SET time_left = 0 WHERE username = $1',
+            [username]
+        );
+        res.json({ message: 'Session terminated successfully' });
+    } catch (error) {
+        console.error('Error terminating session:', error);
+        res.status(500).json({ error: 'Failed to terminate session' });
+    }
+});
+
 // Routes
 app.get('/api/comments', getComments);
 app.get('/api/new-comments', getNewComments);

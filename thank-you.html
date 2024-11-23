@@ -13,6 +13,21 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
+    <script>
+        // Prevent going back
+        history.pushState(null, null, document.URL);
+        window.addEventListener('popstate', function () {
+            history.pushState(null, null, document.URL);
+        });
+
+        // Check if user tries to navigate back to web.html
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('username')) {
+                localStorage.removeItem('username');
+            }
+        });
+    </script>
+
 </head>
 
 <body>
@@ -44,4 +59,3 @@
 </body>
 
 </html>
-
