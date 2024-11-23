@@ -88,7 +88,7 @@ avatarInput.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
         // Show the modal
-        modal.classList.add('show');
+        modal.style.display = 'block';
         
         // Create a URL for the selected image
         const imageUrl = URL.createObjectURL(file);
@@ -125,7 +125,7 @@ closeModal.addEventListener('click', closeImageEditor);
 cancelButton.addEventListener('click', closeImageEditor);
 
 function closeImageEditor() {
-    modal.classList.remove('show');
+    modal.style.display = 'none';
     if (cropper) {
         cropper.destroy();
         cropper = null;
