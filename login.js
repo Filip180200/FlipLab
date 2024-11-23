@@ -9,7 +9,7 @@ function toggleForm(formToShow) {
     }
 }
 
-// Function to create and show notification
+// Function to show notification
 function showNotification(message, duration = 15) {
     // Remove any existing notification
     const existingNotification = document.querySelector('.notification');
@@ -51,7 +51,7 @@ function showNotification(message, duration = 15) {
         if (timeLeft <= 0) {
             clearInterval(interval);
             notification.remove();
-            window.location.href = '/'; // Redirect to home page
+            window.location.href = '/';
         }
     }, 1000);
 
@@ -107,7 +107,7 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
-            body: formData // Using FormData instead of JSON
+            body: formData
         });
 
         if (!response.ok) {
@@ -121,36 +121,6 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
     } catch (error) {
         console.error('Registration error:', error);
         alert(error.message);
-    }
-});
-
-// Handle login form submission
-document.getElementById('loginForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const username = document.getElementById('username').value.trim();
-    // Format username to match registration format (capitalize first letter)
-    const formattedUsername = username.split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-
-    try {
-        // Check if user exists
-        const response = await fetch(`/api/check-username/${encodeURIComponent(formattedUsername)}`);
-        const data = await response.json();
-
-        if (data.exists) {
-            // Store the username in localStorage
-            localStorage.setItem('username', formattedUsername);
-            // Redirect to main page
-            window.location.href = '/web.html';
-        } else {
-            alert('Username not found. Please register first.');
-            toggleForm('registerForm');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Login failed. Please try again.');
     }
 });
 

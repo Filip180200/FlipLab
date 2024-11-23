@@ -13,6 +13,7 @@
 
 .form-group {
     margin-bottom: 15px;
+    width: 100%;
 }
 
 .avatar-preview {
@@ -28,4 +29,30 @@
 
 #avatar {
     margin-top: 5px;
+    width: 100%;
+}
+
+.auth-form {
+    max-height: 90vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* Add scrollbar styling */
+.auth-form::-webkit-scrollbar {
+    width: 8px;
+}
+
+.auth-form::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.auth-form::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 4px;
+}
+
+.auth-form::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-dark);
 }

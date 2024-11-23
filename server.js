@@ -71,6 +71,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, './')));
 app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -449,11 +450,11 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         // Capitalize first letter of each name and make the rest lowercase
         const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
         const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
-        
-        // Check if user with same first name AND last name exists
+
+        // Check if user exists
         const checkResult = await executeQuery(
-            'SELECT EXISTS(SELECT 1 FROM users WHERE first_name = $1 AND last_name = $2)',
-            [formattedFirstName, formattedLastName]
+            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists',
+            [`${formattedFirstName} ${formattedLastName}`]
         );
         
         if (checkResult[0].exists) {
@@ -461,20 +462,28 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         }
 
         // Get avatar URL if uploaded
-        const avatarUrl = req.file ? 
-            `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : 
-            null;
+        const avatarUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
         // Insert new user with default time_left
-        await executeQuery(
+        const result = await executeQuery(
             `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, avatarUrl, 900]
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING username`,
+            [
+                `${formattedFirstName} ${formattedLastName}`,
+                formattedFirstName,
+                formattedLastName,
+                age,
+                gender,
+                termsAccepted === 'true',
+                avatarUrl,
+                900
+            ]
         );
 
         res.json({ 
-            username: `${formattedFirstName} ${formattedLastName}`,
-            timeLeft: 900 // Send initial time to client
+            username: result[0].username,
+            timeLeft: 900
         });
     } catch (error) {
         console.error('Error registering user:', error);
