@@ -142,10 +142,13 @@ async function startRealTimeComments() {
         clearInterval(commentUpdateInterval);
     }
 
+    const currentUser = localStorage.getItem('username');
+    if (!currentUser) return;
+
     // Poll for new comments every 2 seconds
     commentUpdateInterval = setInterval(async () => {
         try {
-            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}`);
+            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}&username=${encodeURIComponent(currentUser)}`);
             const newComments = await response.json();
             
             if (newComments.length > 0) {
@@ -169,6 +172,32 @@ async function startRealTimeComments() {
             console.error('Error fetching new comments:', error);
         }
     }, 2000);
+}
+
+async function addComment(event) {
+    event.preventDefault();
+    
+    const commentInput = document.getElementById('comment');
+    const comment = commentInput.value.trim();
+    const nickname = localStorage.getItem('username');
+    
+    if (!comment) return;
+    
+    try {
+        // Send comment to server
+        await postData('/api/comment', {
+            username: nickname,
+            comment: comment
+        });
+
+        // Clear input after successful submission
+        commentInput.value = '';
+        
+        // Don't add the comment immediately - it will be fetched by the real-time update
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        showNotification('Error adding comment. Please try again.');
+    }
 }
 
 function addSingleComment(comment, scrollToBottom = true) {
@@ -368,449 +397,4 @@ function closeReportModal() {
 }
 
 // Funkcje komentarzy użytkownika
-async function addComment(event) {
-    event.preventDefault();
-    
-    const commentInput = document.getElementById('comment');
-    const comment = commentInput.value.trim();
-    const nickname = localStorage.getItem('username');
-    
-    if (!comment) return;
-    
-    try {
-        const response = await postData('/api/comment', {
-            username: nickname,
-            comment: comment
-        });
-
-        // Add comment to cache
-        addCommentToCache(nickname, comment);
-
-        // Create and display the comment immediately
-        const commentObj = {
-            id: Date.now(),  // Temporary ID
-            username: nickname,
-            comment: comment,
-            timestamp: new Date().toISOString()
-        };
-        
-        // Clear input before adding comment to prevent double-posting
-        commentInput.value = '';
-        
-        // Add the comment to the chat
-        const chatMessages = document.querySelector('.chat-messages');
-        const commentElement = createCommentElement(commentObj);
-        chatMessages.appendChild(commentElement);
-        
-        // Scroll to the new comment smoothly
-        commentElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } catch (error) {
-        console.error('Błąd podczas dodawania komentarza:', error);
-        showNotification('Error adding comment. Please try again.');
-    }
-}
-
-// YouTube Player API
-function onYouTubeIframeAPIReady() {
-    console.log('YouTube API Ready');
-    player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        videoId: VIDEO_ID,
-        playerVars: {
-            'playsinline': 1,
-            'autoplay': 1,
-            'controls': 1,
-            'modestbranding': 1,
-            'rel': 0,
-            'showinfo': 0,
-            'fs': 1
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
-    });
-
-    // Make sure buttons are visible after player loads
-    const videoContainer = document.querySelector('.video-container');
-    if (videoContainer) {
-        videoContainer.style.display = 'flex';
-        videoContainer.style.flexDirection = 'column';
-    }
-}
-
-function onPlayerReady(event) {
-    console.log('Player Ready');
-    event.target.playVideo();
-}
-
-function onPlayerStateChange(event) {
-    console.log('Player State Changed:', event.data);
-}
-
-// Channel video IDs
-const channelVideos = {
-    'ChilledCow': 'jfKfPfyJRdk',
-    'pokimane': '5qap5aO4i9A',
-    'Faker': 'DWZIfsaIgtE',
-    'Dream': '21X5lGlDOfg'
-};
-
-// Funkcje kanałów
-function setupChannelInteractions() {
-    const channelItems = document.querySelectorAll('.channel-item');
-    channelItems.forEach(item => {
-        item.addEventListener('click', () => {
-            // Remove active class from all items
-            channelItems.forEach(i => i.classList.remove('active'));
-            // Add active class to clicked item
-            item.classList.add('active');
-
-            const channelName = item.querySelector('h4').textContent;
-            const gameName = item.querySelector('p').textContent;
-            const viewerCount = item.querySelector('.viewer-count').textContent;
-            const avatarSrc = item.querySelector('.channel-preview img').src;
-            const tags = item.querySelector('.tags').textContent.split('•').map(tag => tag.trim());
-
-            // Change video if player is ready
-            if (player && player.loadVideoById && channelVideos[channelName]) {
-                player.loadVideoById(channelVideos[channelName]);
-            }
-
-            // Update stream info
-            document.querySelector('.channel-name').textContent = channelName;
-            document.querySelector('.channel-game').textContent = gameName;
-            document.querySelector('.channel-avatar img').src = avatarSrc;
-            
-            // Update stream tags
-            const tagsContainer = document.querySelector('.stream-tags');
-            tagsContainer.innerHTML = '';
-            tags.forEach(tag => {
-                const tagSpan = document.createElement('span');
-                tagSpan.className = 'tag';
-                tagSpan.textContent = tag;
-                tagsContainer.appendChild(tagSpan);
-            });
-
-            // Update viewer count
-            document.querySelector('.viewers').innerHTML = `<i class="fas fa-user"></i> ${viewerCount} viewers`;
-
-            // Show notification
-            showNotification(`Switched to ${channelName}'s channel`);
-
-            // Reset follow/sub buttons
-            const followBtn = document.querySelector('.follow-btn');
-            const subscribeBtn = document.querySelector('.subscribe-btn');
-            followBtn.innerHTML = '<i class="fas fa-heart"></i> Follow';
-            followBtn.style.background = '#3a3a3d';
-            followBtn.classList.remove('following');
-            subscribeBtn.innerHTML = '<i class="far fa-star"></i> Subscribe';
-            subscribeBtn.style.background = '#3a3a3d';
-            subscribeBtn.classList.remove('subscribed');
-        });
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Settings button notification
-    const settingsButton = document.querySelector('.settings-btn');
-    if (settingsButton) {
-        settingsButton.addEventListener('click', () => {
-            showNotification('Settings will be available in a future update!', 'info');
-        });
-    }
-
-    // Handle clicks for reporting
-    document.addEventListener('click', function(e) {
-        const reportModal = document.getElementById('reportModal');
-        const reportOverlay = document.querySelector('.report-overlay');
-
-        // Handle username clicks
-        if (e.target.classList.contains('username')) {
-            const messageEl = e.target.closest('.chat-message');
-            const username = messageEl.querySelector('.username').textContent;
-            const avatar = messageEl.querySelector('.chat-avatar').src;
-            openReportModal(username, avatar);
-        }
-
-        // Handle report button clicks
-        if (e.target.closest('.report-btn')) {
-            const messageEl = e.target.closest('.chat-message');
-            const username = messageEl.querySelector('.username').textContent;
-            const avatar = messageEl.querySelector('.chat-avatar').src;
-            openReportModal(username, avatar);
-        }
-
-        // Close on overlay click
-        if (e.target.classList.contains('report-overlay')) {
-            closeReportModal();
-        }
-
-        // Close on close button click
-        if (e.target.closest('.close-preview')) {
-            closeReportModal();
-        }
-
-        // Handle report submit
-        if (e.target.closest('.report-submit')) {
-            const username = reportModal.querySelector('#reportUsername').textContent;
-            reportUser(username);
-        }
-    });
-
-    // Handle comment form
-    const commentForm = document.getElementById('commentForm');
-    if (commentForm) {
-        commentForm.addEventListener('submit', addComment);
-    }
-
-    // Initialize app
-    initializeApp();
-});
-
-// Inicjalizacja
-async function initializeApp() {
-    console.log('Initializing app...');
-    
-    // Start real-time comments
-    startRealTimeComments();
-    
-    // Setup channel interactions
-    setupChannelInteractions();
-    
-    // Load initial comments
-    loadComments(true);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const subscribeBtn = document.querySelector('.subscribe-btn');
-    if (subscribeBtn) {
-        let isSubscribed = false;
-        subscribeBtn.addEventListener('click', function() {
-            isSubscribed = !isSubscribed;
-            if (isSubscribed) {
-                this.innerHTML = '<i class="fas fa-star"></i> Subscribed';
-                this.style.background = '#9147ff';  // Purple color when subscribed
-                showNotification('Thanks for subscribing!', 'success');
-            } else {
-                this.innerHTML = '<i class="far fa-star"></i> Subscribe';
-                this.style.background = '#3a3a3d';  // Default color
-                showNotification('Subscription cancelled', 'info');
-            }
-        });
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const followBtn = document.querySelector('.follow-btn');
-    if (followBtn) {
-        let isFollowing = false;
-        followBtn.addEventListener('click', function() {
-            isFollowing = !isFollowing;
-            if (isFollowing) {
-                this.innerHTML = '<i class="fas fa-heart-broken"></i> Unfollow';
-                this.style.background = '#f00';  // Red color when following
-                showNotification('Thanks for following! You will now receive notifications when we go live.', 'success');
-            } else {
-                this.innerHTML = '<i class="fas fa-heart"></i> Follow';
-                this.style.background = '#3a3a3d';  // Default color
-                showNotification('You have unfollowed the channel', 'info');
-            }
-        });
-    }
-});
-
-// Timer functionality
-let sessionTime = 900; // 15 minutes in seconds
-let timerInterval = null;
-const countdownElement = document.getElementById('countdown');
-
-// Start countdown timer
-async function startCountdown() {
-    // Get initial time from server
-    const username = localStorage.getItem('username');
-    if (username) {
-        try {
-            const response = await fetch(`/api/time-left/${username}`);
-            if (response.ok) {
-                const data = await response.json();
-                sessionTime = data.timeLeft;
-
-                // If time is up, redirect to thank-you page
-                if (sessionTime <= 0) {
-                    localStorage.removeItem('username');
-                    window.location.href = '/thank-you.html';
-                    return;
-                }
-            }
-        } catch (error) {
-            console.error('Error getting initial time:', error);
-        }
-    }
-
-    updateTimerDisplay(sessionTime);
-    
-    // Clear any existing interval
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
-
-    timerInterval = setInterval(() => {
-        if (sessionTime > 0) {
-            sessionTime--;
-            updateTimerDisplay(sessionTime);
-            
-            // Sync with server every 30 seconds or when time is up
-            if (sessionTime % 30 === 0 || sessionTime === 0) {
-                fetch('/api/update-time', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: localStorage.getItem('username'),
-                        timeLeft: sessionTime
-                    })
-                }).catch(error => console.error('Error updating time:', error));
-            }
-
-            if (sessionTime === 0) {
-                clearInterval(timerInterval);
-                localStorage.removeItem('username');
-                window.location.href = '/thank-you.html';
-            }
-        }
-    }, 1000);
-}
-
-// Update timer display
-function updateTimerDisplay(timeLeft) {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    if (countdownElement) {
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-}
-
-// Prevent going back to web.html if session is ended
-window.addEventListener('load', async () => {
-    const username = localStorage.getItem('username');
-    if (!username) {
-        window.location.href = '/thank-you.html';
-        return;
-    }
-
-    // Check if time is still valid
-    try {
-        const response = await fetch(`/api/time-left/${username}`);
-        if (response.ok) {
-            const data = await response.json();
-            if (!data.timeLeft || data.timeLeft <= 0) {
-                localStorage.removeItem('username');
-                window.location.href = '/thank-you.html';
-                return;
-            }
-        } else {
-            // If error or user not found, redirect to thank-you
-            localStorage.removeItem('username');
-            window.location.href = '/thank-you.html';
-            return;
-        }
-    } catch (error) {
-        console.error('Error checking time:', error);
-        localStorage.removeItem('username');
-        window.location.href = '/thank-you.html';
-        return;
-    }
-});
-
-// Prevent back button after session ends
-window.addEventListener('popstate', function(event) {
-    const username = localStorage.getItem('username');
-    if (!username && window.location.pathname !== '/thank-you.html') {
-        window.location.href = '/thank-you.html';
-    }
-});
-
-// Handle page visibility change and window close
-window.addEventListener('beforeunload', (event) => {
-    const username = localStorage.getItem('username');
-    if (username && sessionTime > 0) {
-        const beaconData = {
-            username: username,
-            timeLeft: Math.max(0, sessionTime)
-        };
-
-        // Use the sendBeacon API with proper content type
-        navigator.sendBeacon('/api/update-time/beacon', new Blob(
-            [JSON.stringify(beaconData)],
-            { type: 'application/json' }
-        ));
-        
-        // Clear the username from storage
-        localStorage.removeItem('username');
-    }
-});
-
-document.addEventListener('visibilitychange', async () => {
-    const username = localStorage.getItem('username');
-    
-    if (document.hidden) {
-        if (username && sessionTime > 0) {
-            try {
-                // Save the current time immediately when tab loses focus
-                const response = await fetch('/api/update-time', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        timeLeft: Math.max(0, sessionTime)
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update time');
-                }
-            } catch (error) {
-                console.error('Error saving time:', error);
-            }
-        }
-    } else {
-        // Page becomes visible again
-        if (username) {
-            try {
-                const response = await fetch(`/api/time-left/${username}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    sessionTime = data.timeLeft;
-                    
-                    // If time is up, redirect to thank-you page
-                    if (sessionTime <= 0) {
-                        localStorage.removeItem('username');
-                        window.location.href = '/thank-you.html';
-                        return;
-                    }
-                    
-                    // Restart countdown with current time
-                    startCountdown();
-                }
-            } catch (error) {
-                console.error('Error getting time:', error);
-            }
-        }
-    }
-});
-
-// Initialize timer when page loads if we're on web.html and when page becomes visible
-if (window.location.pathname.includes('web.html')) {
-    document.addEventListener('DOMContentLoaded', startCountdown);
-    // Also start countdown when page becomes visible again
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            startCountdown();
-        }
-    });
-}
+// ... (rest of the code remains the same)

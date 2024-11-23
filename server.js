@@ -148,7 +148,7 @@ const getComments = async (req, res, next) => {
 
 const getNewComments = async (req, res, next) => {
     try {
-        const { lastTimestamp } = req.query;
+        const { lastTimestamp, username } = req.query;
         const query = `
             WITH ranked_comments AS (
                 SELECT 
@@ -171,12 +171,12 @@ const getNewComments = async (req, res, next) => {
                     0 as delay,
                     NULL as avatar_url
                 FROM comments
-                WHERE timestamp > $1
+                WHERE timestamp > $1 AND username = $2
             )
             SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
         `;
-        const comments = await executeQuery(query, [lastTimestamp || new Date().toISOString()]);
+        const comments = await executeQuery(query, [lastTimestamp || new Date().toISOString(), username]);
         res.json(comments);
     } catch (err) {
         next(err);
