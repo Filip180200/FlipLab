@@ -69,9 +69,19 @@ const upload = multer({
 // Middleware setup
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, './')));
+
+// Serve static files
+app.use(express.static(path.join(__dirname)));
 app.use('/css', express.static(path.join(__dirname, 'css')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Force cache control for CSS files
+app.use('/css', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
