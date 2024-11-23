@@ -163,9 +163,6 @@ const form = document.getElementById('registerForm');
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    // Create FormData object
-    const formData = new FormData();
-    
     // Get form values
     const firstName = document.getElementById('firstName').value.trim();
     const lastName = document.getElementById('lastName').value.trim();
@@ -173,53 +170,58 @@ form.addEventListener('submit', async function(e) {
     const gender = document.getElementById('gender').value;
     const username = document.getElementById('username').value.trim();
     const termsAccepted = document.getElementById('terms').checked;
+    const avatarInput = document.getElementById('avatar');
 
     // Client-side validation
     if (!firstName || !lastName) {
-        alert('First name and last name are required');
+        showNotification('First name and last name are required', 5);
         return;
     }
 
     if (!username) {
-        alert('Username is required');
+        showNotification('Username is required', 5);
         return;
     }
 
     if (parseInt(age) < 18) {
-        alert('You must be at least 18 years old to register');
+        showNotification('You must be at least 18 years old to register', 5);
         return;
     }
 
     if (!termsAccepted) {
-        alert('You must accept the terms and conditions');
+        showNotification('You must accept the terms and conditions', 5);
         return;
     }
 
-    // Add form fields to FormData
-    formData.append('firstName', firstName);
-    formData.append('lastName', lastName);
-    formData.append('age', age);
-    formData.append('gender', gender);
-    formData.append('username', username);
-    formData.append('termsAccepted', termsAccepted);
-    
-    // Add the cropped image if available
-    if (croppedImageData) {
-        // Convert base64 to blob
+    if (!croppedImageData) {
+        showNotification('Profile picture is required', 5);
+        return;
+    }
+
+    try {
+        // Convert cropped image data to blob
         const response = await fetch(croppedImageData);
         const blob = await response.blob();
+
+        // Create FormData and append all fields
+        const formData = new FormData();
+        formData.append('firstName', firstName);
+        formData.append('lastName', lastName);
+        formData.append('age', age);
+        formData.append('gender', gender);
+        formData.append('username', username);
+        formData.append('termsAccepted', termsAccepted);
         formData.append('avatar', blob, 'avatar.jpg');
-    }
-    
-    try {
-        const response = await fetch('/api/register', {
+
+        // Send registration request
+        const registerResponse = await fetch('/api/register', {
             method: 'POST',
             body: formData
         });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
+
+        const data = await registerResponse.json();
+
+        if (registerResponse.ok) {
             // Store username in localStorage
             localStorage.setItem('username', data.username);
             // Show success message

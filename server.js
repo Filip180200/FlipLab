@@ -443,6 +443,11 @@ app.post('/api/update-time/beacon', async (req, res) => {
 // Register new user
 app.post('/api/register', upload.single('avatar'), async (req, res) => {
     try {
+        // Check if avatar was uploaded
+        if (!req.file) {
+            return res.status(400).json({ error: 'Profile picture is required' });
+        }
+
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
 
         // Basic validation
@@ -470,8 +475,8 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
             return res.status(400).json({ error: 'A user with this name already exists' });
         }
 
-        // Get avatar URL if uploaded
-        const avatarUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        // Get avatar URL
+        const avatarUrl = `/uploads/${req.file.filename}`;
 
         // Insert new user
         const result = await executeQuery(
