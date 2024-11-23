@@ -166,12 +166,42 @@ form.addEventListener('submit', async function(e) {
     // Create FormData object
     const formData = new FormData();
     
-    // Add all form fields
-    formData.append('firstName', document.getElementById('firstName').value);
-    formData.append('lastName', document.getElementById('lastName').value);
-    formData.append('age', document.getElementById('age').value);
-    formData.append('gender', document.getElementById('gender').value);
-    formData.append('username', document.getElementById('username').value);
+    // Get form values
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const age = document.getElementById('age').value;
+    const gender = document.getElementById('gender').value;
+    const username = document.getElementById('username').value.trim();
+    const termsAccepted = document.getElementById('terms').checked;
+
+    // Client-side validation
+    if (!firstName || !lastName) {
+        alert('First name and last name are required');
+        return;
+    }
+
+    if (!username) {
+        alert('Username is required');
+        return;
+    }
+
+    if (parseInt(age) < 18) {
+        alert('You must be at least 18 years old to register');
+        return;
+    }
+
+    if (!termsAccepted) {
+        alert('You must accept the terms and conditions');
+        return;
+    }
+
+    // Add form fields to FormData
+    formData.append('firstName', firstName);
+    formData.append('lastName', lastName);
+    formData.append('age', age);
+    formData.append('gender', gender);
+    formData.append('username', username);
+    formData.append('termsAccepted', termsAccepted);
     
     // Add the cropped image if available
     if (croppedImageData) {
@@ -192,76 +222,20 @@ form.addEventListener('submit', async function(e) {
         if (response.ok) {
             // Store username in localStorage
             localStorage.setItem('username', data.username);
-            // Redirect to main page
-            window.location.href = 'web.html';
+            // Show success message
+            showNotification('Registration successful! Redirecting...', 3);
+            // Redirect to main page after a short delay
+            setTimeout(() => {
+                window.location.href = 'web.html';
+            }, 2000);
         } else {
-            alert(data.error || 'Registration failed');
+            showNotification(data.error || 'Registration failed. Please try again.', 5);
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Registration failed. Please try again.');
+        showNotification('Registration failed. Please try again.', 5);
     }
 });
-
-// Handle avatar file selection and preview
-// document.getElementById('avatar').addEventListener('change', function(event) {
-//     const file = event.target.files[0];
-//     if (file) {
-//         const reader = new FileReader();
-//         reader.onload = function(e) {
-//             const preview = document.getElementById('avatar-preview');
-//             preview.style.backgroundImage = `url(${e.target.result})`;
-//         };
-//         reader.readAsDataURL(file);
-//     }
-// });
-
-// Handle registration form submission
-// document.getElementById('registerForm').addEventListener('submit', async (event) => {
-//     event.preventDefault();
-
-//     const formData = new FormData();
-//     formData.append('firstName', document.getElementById('firstName').value.trim());
-//     formData.append('lastName', document.getElementById('lastName').value.trim());
-//     formData.append('age', document.getElementById('age').value);
-//     formData.append('gender', document.getElementById('gender').value);
-//     formData.append('termsAccepted', document.getElementById('terms').checked);
-
-//     const avatarFile = document.getElementById('avatar').files[0];
-//     if (avatarFile) {
-//         formData.append('avatar', avatarFile);
-//     }
-
-//     // Client-side validation
-//     if (parseInt(formData.get('age')) < 18) {
-//         alert('You must be at least 18 years old to register');
-//         return;
-//     }
-
-//     if (!formData.get('firstName') || !formData.get('lastName')) {
-//         alert('First name and last name are required');
-//         return;
-//     }
-
-//     try {
-//         const response = await fetch('/api/register', {
-//             method: 'POST',
-//             body: formData
-//         });
-
-//         if (!response.ok) {
-//             const errorData = await response.json();
-//             throw new Error(errorData.error || 'Registration failed');
-//         }
-
-//         const data = await response.json();
-//         localStorage.setItem('username', data.username);
-//         window.location.href = '/web.html';
-//     } catch (error) {
-//         console.error('Registration error:', error);
-//         alert(error.message);
-//     }
-// });
 
 // Check if user is already logged in
 document.addEventListener('DOMContentLoaded', () => {
