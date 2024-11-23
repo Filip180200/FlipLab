@@ -77,18 +77,6 @@
     margin-right: 8px;
 }
 
-.timestamp {
-    color: var(--color-muted);
-    font-size: 12px;
-    margin-left: 4px;
-}
-
-.message {
-    color: var(--color-text);
-    margin-top: 4px;
-    word-break: break-word;
-}
-
 /* Reported message styles */
 .chat-message.reported {
     opacity: 0.6;
