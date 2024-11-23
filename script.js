@@ -755,3 +755,61 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Settings button notification
+    const settingsButton = document.querySelector('.settings-btn');
+    if (settingsButton) {
+        settingsButton.addEventListener('click', () => {
+            showNotification('Settings will be available in a future update!', 'info');
+        });
+    }
+
+    // Handle clicks for reporting
+    document.addEventListener('click', function(e) {
+        const reportModal = document.getElementById('reportModal');
+        const reportOverlay = document.querySelector('.report-overlay');
+
+        // Handle username clicks
+        if (e.target.classList.contains('username')) {
+            const messageEl = e.target.closest('.chat-message');
+            const username = messageEl.querySelector('.username').textContent;
+            const avatar = messageEl.querySelector('.chat-avatar').src;
+            openReportModal(username, avatar);
+        }
+
+        // Handle report button clicks
+        if (e.target.closest('.report-btn')) {
+            const messageEl = e.target.closest('.chat-message');
+            const username = messageEl.querySelector('.username').textContent;
+            const avatar = messageEl.querySelector('.chat-avatar').src;
+            openReportModal(username, avatar);
+        }
+
+        // Close on overlay click
+        if (e.target.classList.contains('report-overlay')) {
+            closeReportModal();
+        }
+
+        // Close on close button click
+        if (e.target.closest('.close-preview')) {
+            closeReportModal();
+        }
+
+        // Handle report submit
+        if (e.target.closest('.report-submit')) {
+            const username = reportModal.querySelector('#reportUsername').textContent;
+            reportUser(username);
+        }
+    });
+
+    // Handle comment form
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', addComment);
+    }
+
+    // Initialize app
+    initializeApp();
+});
