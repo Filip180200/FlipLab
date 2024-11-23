@@ -161,14 +161,15 @@ const getComments = async (req, res, next) => {
                 FROM simulated_comments
                 UNION ALL
                 SELECT 
-                    id,
-                    username,
-                    comment,
-                    timestamp,
+                    c.id,
+                    c.username,
+                    c.comment,
+                    c.timestamp,
                     'normal' as type,
                     0 as delay,
-                    NULL as avatar_url
-                FROM comments
+                    u.avatar_url
+                FROM comments c
+                LEFT JOIN users u ON u.username = c.username
             )
             SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
@@ -194,18 +195,19 @@ const getNewComments = async (req, res, next) => {
                     delay,
                     avatar_url
                 FROM simulated_comments
-                WHERE timestamp > $1
+                WHERE timestamp > $1 AND username = $2
                 UNION ALL
                 SELECT 
-                    id,
-                    username,
-                    comment,
-                    timestamp,
+                    c.id,
+                    c.username,
+                    c.comment,
+                    c.timestamp,
                     'normal' as type,
                     0 as delay,
-                    NULL as avatar_url
-                FROM comments
-                WHERE timestamp > $1 AND username = $2
+                    u.avatar_url
+                FROM comments c
+                LEFT JOIN users u ON u.username = c.username
+                WHERE c.timestamp > $1 AND c.username = $2
             )
             SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
@@ -255,9 +257,10 @@ const getLastThreeComments = async (req, res, next) => {
                     comment,
                     timestamp,
                     'normal' as type,
-                    NULL as avatar_url
-                FROM comments
-                WHERE username = $1
+                    u.avatar_url
+                FROM comments c
+                LEFT JOIN users u ON u.username = c.username
+                WHERE c.username = $1
                 UNION ALL
                 SELECT 
                     id,
