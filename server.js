@@ -392,15 +392,15 @@ const getUserData = async (req, res, next) => {
     try {
         const { username } = req.params;
         const result = await executeQuery(
-            'SELECT username, first_name, last_name, age, gender, time_left FROM users WHERE username = $1',
+            'SELECT username, test_group, viewer_number, time_left FROM users WHERE username = $1',
             [username]
         );
         
-        if (result.length > 0) {
-            res.json(result[0]);
-        } else {
-            res.status(404).json({ error: 'User not found' });
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
         }
+
+        res.json(result[0]);
     } catch (err) {
         next(err);
     }

@@ -798,7 +798,20 @@ window.addEventListener('load', async () => {
     }
 });
 
-// Initialize function
+// Format number with commas
+function formatNumberWithCommas(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Update viewer count
+function updateViewerCount(viewerNumber) {
+    const viewerElements = document.querySelectorAll('.viewer-number');
+    viewerElements.forEach(element => {
+        element.textContent = formatNumberWithCommas(viewerNumber);
+    });
+}
+
+// Initialize app with test group info
 async function initializeApp() {
     console.log('Initializing app...');
     
@@ -810,11 +823,16 @@ async function initializeApp() {
 
     try {
         const response = await fetch(`${API_URL}/api/user/${username}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user data');
+        }
         const userData = await response.json();
         
         // Update viewer count from database
         if (userData.viewer_number) {
             updateViewerCount(userData.viewer_number);
+        } else {
+            console.error('No viewer number in user data:', userData);
         }
 
         // Load initial comments
@@ -831,14 +849,5 @@ async function initializeApp() {
     }
 }
 
-// Update viewer count
-function updateViewerCount(viewerNumber) {
-    const viewerElements = document.querySelectorAll('.viewer-number');
-    viewerElements.forEach(element => {
-        element.textContent = formatNumberWithCommas(viewerNumber);
-    });
-}
-
-function formatNumberWithCommas(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
+// Call initializeApp when the page loads
+document.addEventListener('DOMContentLoaded', initializeApp);
