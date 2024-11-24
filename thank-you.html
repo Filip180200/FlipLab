@@ -3,210 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlipLab - Thank You</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .thank-you-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .thank-you-content {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
-        }
-
-        .thank-you-icon {
-            font-size: 48px;
-            color: #8b5cf6;
-            margin-bottom: 20px;
-        }
-
-        .feedback-form {
-            margin-top: 30px;
-            text-align: left;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            width: 100%;
-        }
-
-        .feedback-form textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 10px;
-            margin: 10px 0;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            color: #fff;
-            font-size: 14px;
-            resize: vertical;
-        }
-
-        .feedback-form button {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .feedback-form button:hover {
-            background: linear-gradient(135deg, #9f75ff, #8b5cf6);
-            transform: translateY(-1px);
-        }
-
-        .feedback-form label {
-            display: block;
-            margin-bottom: 5px;
-            color: #e0e0e0;
-            font-size: 16px;
-        }
-
-        .feedback-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            display: none;
-            text-align: center;
-        }
-
-        .feedback-message.success {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-        }
-
-        .feedback-message.error {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }
-
-        .contact-info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .contact-email {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
-        }
-
-        .contact-email a {
-            color: #8b5cf6;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .contact-email a:hover {
-            color: #9f75ff;
-        }
-    </style>
+    <title>Thank You - FlipLab</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/thank-you.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="thank-you-container">
         <div class="thank-you-content">
-            <i class="fas fa-heart thank-you-icon"></i>
-            <h1>Thank You for Trying FlipLab!</h1>
-            <p>Your test session has ended. We appreciate your interest in our platform.</p>
+            <i class="fas fa-check-circle thank-you-icon"></i>
+            <h1>Thank You for Participating!</h1>
+            <p>Your session has ended. We appreciate your time and participation.</p>
             
-            <form id="feedbackForm" class="feedback-form" onsubmit="submitFeedback(event)">
-                <label for="feedback">Please share your feedback about FlipLab:</label>
-                <textarea id="feedback" placeholder="Tell us what you think about FlipLab..."></textarea>
-                <button type="submit">Submit Feedback</button>
-                <div id="feedbackMessage" class="feedback-message"></div>
-            </form>
-
-            <div class="contact-info">
-                <p>For more information or to get full access, please contact us at:</p>
-                <div class="contact-email">
-                    <i class="fas fa-envelope"></i>
-                    <a href="mailto:contact@fliplab.com">contact@fliplab.com</a>
-                </div>
+            <div id="feedbackSection">
+                <!-- Will be populated based on feedback status -->
             </div>
         </div>
     </div>
-
-    <script>
-        // Prevent going back
-        history.pushState(null, null, document.URL);
-        window.addEventListener('popstate', function () {
-            history.pushState(null, null, document.URL);
-        });
-
-        const API_URL = 'https://fliplab.onrender.com';
-
-        // Handle feedback submission
-        async function submitFeedback(event) {
-            event.preventDefault();
-            
-            const feedbackText = document.getElementById('feedback').value.trim();
-            const username = localStorage.getItem('username') || 'anonymous'; // Use 'anonymous' if no username
-            
-            if (!feedbackText) {
-                showMessage('Please enter your feedback', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/api/feedback`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username,
-                        feedback: feedbackText
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    showMessage('Thank you for your feedback!', 'success');
-                    document.getElementById('feedback').value = '';
-                    document.getElementById('feedbackForm').style.display = 'none';
-                } else {
-                    const error = await response.text();
-                    showMessage(error || 'Failed to submit feedback', 'error');
-                }
-            } catch (error) {
-                console.error('Error submitting feedback:', error);
-                showMessage('Error connecting to server. Please try again later.', 'error');
-            }
-        }
-
-        function showMessage(message, type) {
-            const messageElement = document.getElementById('feedbackMessage');
-            messageElement.textContent = message;
-            messageElement.className = `feedback-message ${type}`;
-            messageElement.style.display = 'block';
-            
-            if (type === 'success') {
-                setTimeout(() => {
-                    messageElement.style.display = 'none';
-                }, 3000);
-            }
-        }
-    </script>
+    <script src="thank-you.js"></script>
 </body>
 </html>
