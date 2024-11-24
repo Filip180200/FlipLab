@@ -804,10 +804,8 @@ async function initializeApp() {
         const response = await fetch(`${API_URL}/api/user/${username}`);
         const userData = await response.json();
         
-        // Update viewer count based on test group
-        if (userData.viewerNumber) {
-            updateViewerCount(userData.viewerNumber);
-        }
+        // Update viewer count
+        updateViewerCount();
 
         // Start real-time comments based on test group
         const commentsTable = userData.testGroup === 'a' || userData.testGroup === 'c' ? 1 : 2;
@@ -824,10 +822,10 @@ async function initializeApp() {
     }
 }
 
-// Update viewer count based on test group
-function updateViewerCount(viewerNumber) {
+// Update viewer count
+function updateViewerCount() {
     const viewerElements = document.querySelectorAll('.viewer-number');
     viewerElements.forEach(element => {
-        element.textContent = formatNumber(viewerNumber);
+        element.textContent = '1,200';
     });
 }
