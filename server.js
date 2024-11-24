@@ -98,6 +98,23 @@ const initializeDatabase = async () => {
     try {
         // Create tables if they don't exist
         await pool.query(`
+            -- Alter users table to add new columns
+            DO $$ 
+            BEGIN
+                -- Add test_group column if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='test_group') THEN
+                    ALTER TABLE users ADD COLUMN test_group VARCHAR(1) DEFAULT 'a';
+                END IF;
+
+                -- Add viewer_number column if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='viewer_number') THEN
+                    ALTER TABLE users ADD COLUMN viewer_number INTEGER DEFAULT 124;
+                END IF;
+            END $$;
+
+            -- Create comments table if it doesn't exist
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
@@ -105,6 +122,7 @@ const initializeDatabase = async () => {
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            -- Create simulated_comments_1 table
             CREATE TABLE IF NOT EXISTS simulated_comments_1 (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
@@ -114,6 +132,7 @@ const initializeDatabase = async () => {
                 delay INTEGER DEFAULT 0
             );
 
+            -- Create simulated_comments_2 table
             CREATE TABLE IF NOT EXISTS simulated_comments_2 (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
@@ -123,6 +142,7 @@ const initializeDatabase = async () => {
                 delay INTEGER DEFAULT 0
             );
 
+            -- Create users table if it doesn't exist
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) UNIQUE NOT NULL,
@@ -134,11 +154,10 @@ const initializeDatabase = async () => {
                 terms_accepted BOOLEAN DEFAULT false,
                 avatar_url TEXT,
                 feedback TEXT,
-                session_ended BOOLEAN DEFAULT false,
-                test_group VARCHAR(1) DEFAULT 'a',
-                viewer_number INTEGER DEFAULT 124
+                session_ended BOOLEAN DEFAULT false
             );
 
+            -- Create reports table if it doesn't exist
             CREATE TABLE IF NOT EXISTS reports (
                 id SERIAL PRIMARY KEY,
                 reported_username VARCHAR(255) NOT NULL,
