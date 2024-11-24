@@ -613,6 +613,43 @@ app.post('/api/feedback', async (req, res) => {
     }
 });
 
+// Update session status endpoint
+app.post('/api/end-session', async (req, res) => {
+    try {
+        const { username } = req.body;
+        
+        await executeQuery(
+            'UPDATE users SET session_ended = true WHERE username = $1',
+            [username]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error ending session:', error);
+        res.status(500).json({ error: 'Failed to end session' });
+    }
+});
+
+// Get session status endpoint
+app.get('/api/session-status/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT session_ended FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ session_ended: result[0].session_ended });
+    } catch (error) {
+        console.error('Error checking session status:', error);
+        res.status(500).json({ error: 'Failed to check session status' });
+    }
+});
+
 // Routes
 app.get('/api/comments', getComments);
 app.get('/api/new-comments', getNewComments);

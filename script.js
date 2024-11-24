@@ -504,6 +504,20 @@ let timerInterval = null;
 const countdownElement = document.getElementById('countdown');
 
 // Session management functions
+async function endSession(username) {
+    try {
+        await fetch(`${API_URL}/api/end-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username })
+        });
+    } catch (error) {
+        console.error('Error ending session:', error);
+    }
+}
+
 async function checkSessionStatus() {
     const username = localStorage.getItem('username');
     if (!username) {
@@ -512,7 +526,7 @@ async function checkSessionStatus() {
     }
 
     try {
-        const response = await fetch(`/api/session-status/${username}`);
+        const response = await fetch(`${API_URL}/api/session-status/${username}`);
         const data = await response.json();
 
         if (data.session_ended) {
@@ -542,7 +556,16 @@ async function startCountdown() {
     }
 
     try {
-        const response = await fetch(`/api/time-left/${username}`);
+        // First check if session is already ended
+        const statusResponse = await fetch(`${API_URL}/api/session-status/${username}`);
+        const statusData = await statusResponse.json();
+        
+        if (statusData.session_ended) {
+            redirectToThankYou();
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/api/time-left/${username}`);
         if (!response.ok) {
             throw new Error('Failed to get time left');
         }
@@ -550,8 +573,9 @@ async function startCountdown() {
         const data = await response.json();
         sessionTime = data.timeLeft;
 
-        // If time is already up, redirect
+        // If time is already up, end session and redirect
         if (sessionTime <= 0) {
+            await endSession(username);
             redirectToThankYou();
             return;
         }
@@ -565,28 +589,32 @@ async function startCountdown() {
         }
 
         // Start countdown
-        timerInterval = setInterval(() => {
+        timerInterval = setInterval(async () => {
             if (sessionTime > 0) {
                 sessionTime--;
                 updateTimerDisplay(sessionTime);
                 
-                if (sessionTime <= 0) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                    fetch('/api/terminate-session', {
+                // Send periodic updates to server without resetting timer
+                try {
+                    await fetch(`${API_URL}/api/update-time`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            username: username,
-                            timeLeft: 0
+                            username,
+                            timeLeft: sessionTime
                         })
-                    }).then(() => {
-                        redirectToThankYou();
-                    }).catch(error => {
-                        console.error('Error terminating session:', error);
                     });
+                } catch (error) {
+                    console.error('Error updating time:', error);
+                }
+                
+                if (sessionTime <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    await endSession(username);
+                    redirectToThankYou();
                 }
             }
         }, 1000);
@@ -610,32 +638,16 @@ document.addEventListener('visibilitychange', async function() {
     if (!username) return;
 
     if (document.visibilityState === 'hidden') {
-        // Save current time when page is hidden
-        if (timerInterval) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-        }
-        
-        try {
-            await fetch('/api/terminate-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username: username,
-                    timeLeft: sessionTime
-                })
-            });
-        } catch (error) {
-            console.error('Error saving time:', error);
-        }
-    } else {
-        // When page becomes visible again, check session and restart timer if needed
-        const isValid = await checkSessionStatus();
-        if (isValid) {
-            startCountdown();
-        }
+        await endSession(username);
+        redirectToThankYou();
+    }
+});
+
+// Handle page unload
+window.addEventListener('beforeunload', async (event) => {
+    const username = localStorage.getItem('username');
+    if (username) {
+        await endSession(username);
     }
 });
 
@@ -647,72 +659,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isValid) {
             startCountdown();
         }
-    }
-});
-
-// Handle page unload
-window.addEventListener('beforeunload', async () => {
-    const username = localStorage.getItem('username');
-    if (!username) return;
-
-    try {
-        await fetch('/api/terminate-session', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: username,
-                timeLeft: sessionTime
-            })
-        });
-    } catch (error) {
-        console.error('Error saving time:', error);
-    }
-});
-
-// Initialize function
-async function initializeApp() {
-    console.log('Initializing app...');
-    
-    // Start real-time comments
-    startRealTimeComments();
-    
-    // Setup channel interactions
-    setupChannelInteractions();
-    
-    // Load initial comments
-    loadComments(true);
-}
-
-// Prevent going back to web.html if session is ended
-window.addEventListener('load', async () => {
-    const username = localStorage.getItem('username');
-    if (!username) {
-        window.location.href = '/thank-you.html';
-        return;
-    }
-
-    // Check if time is still valid
-    try {
-        const response = await fetch(`/api/time-left/${username}`);
-        if (response.ok) {
-            const data = await response.json();
-            if (!data.timeLeft || data.timeLeft <= 0) {
-                localStorage.removeItem('username');
-                window.location.href = '/thank-you.html';
-                return;
-            }
-        } else {
-            localStorage.removeItem('username');
-            window.location.href = '/thank-you.html';
-            return;
-        }
-    } catch (error) {
-        console.error('Error checking time:', error);
-        localStorage.removeItem('username');
-        window.location.href = '/thank-you.html';
-        return;
     }
 });
 
@@ -813,3 +759,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize app
     initializeApp();
 });
+
+// Prevent going back to web.html if session is ended
+window.addEventListener('load', async () => {
+    const username = localStorage.getItem('username');
+    if (!username) {
+        window.location.href = '/thank-you.html';
+        return;
+    }
+
+    // Check if time is still valid
+    try {
+        const response = await fetch(`${API_URL}/api/time-left/${username}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (!data.timeLeft || data.timeLeft <= 0) {
+                localStorage.removeItem('username');
+                window.location.href = '/thank-you.html';
+                return;
+            }
+        } else {
+            localStorage.removeItem('username');
+            window.location.href = '/thank-you.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking time:', error);
+        localStorage.removeItem('username');
+        window.location.href = '/thank-you.html';
+        return;
+    }
+});
+
+// Initialize function
+async function initializeApp() {
+    console.log('Initializing app...');
+    
+    // Start real-time comments
+    startRealTimeComments();
+    
+    // Setup channel interactions
+    setupChannelInteractions();
+    
+    // Load initial comments
+    loadComments(true);
+}
