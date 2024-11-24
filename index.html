@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
     <title>FlipLab - Stream Viewer</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
 </head>
 <body>
     <div class="login-container">
@@ -23,49 +26,88 @@
         <!-- Registration Form -->
         <form id="registerForm" class="auth-form">
             <h2>Create Account</h2>
-            <div class="form-group">
-                <label for="firstName">First Name:</label>
-                <input type="text" id="firstName" required>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="lastName">Last Name:</label>
-                <input type="text" id="lastName" required>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="age">Age:</label>
+                    <input type="number" id="age" min="18" max="120" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">Gender:</label>
+                    <select id="gender" required>
+                        <option value="">Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="age">Age:</label>
-                <input type="number" id="age" min="18" max="120" required>
+
+            <div class="form-group full-width">
+                <label for="avatar">Profile Picture (required):</label>
+                <input type="file" id="avatar" accept="image/*" required lang="en">
+                <div id="avatar-preview" class="avatar-preview">
+                    <img id="avatar-image" style="display: none;">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Gender:</label>
-                <select id="gender" required>
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>
+
+            <div class="form-group terms-group">
+                <label class="terms-label">
                     <input type="checkbox" id="terms" required>
                     I accept the terms and conditions
                 </label>
             </div>
-            <button type="submit">Create Account</button>
-            <p>Already have an account? <a href="#" onclick="toggleForm('loginForm')">Login</a></p>
-        </form>
 
-        <!-- Login Form -->
-        <form id="loginForm" class="auth-form">
-            <h2>Welcome Back</h2>
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" required>
-            </div>
-            <button type="submit">Login</button>
-            <p>Don't have an account? <a href="#" onclick="toggleForm('registerForm')">Register</a></p>
+            <button type="submit">Create Account</button>
         </form>
     </div>
 
-    <script src="login.js"></script>
+    <!-- Image Editor Modal -->
+    <div id="imageEditorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Profile Picture</h3>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="image-container">
+                    <img id="image-to-crop">
+                </div>
+                <div class="editor-controls">
+                    <button type="button" id="rotateLeft" class="editor-btn">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button type="button" id="rotateRight" class="editor-btn">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button type="button" id="zoomIn" class="editor-btn">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                    <button type="button" id="zoomOut" class="editor-btn">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelCrop" class="btn-secondary">Cancel</button>
+                <button type="button" id="cropImage" class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+    <script src="js/login.js"></script>
 </body>
 </html>

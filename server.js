@@ -4,6 +4,9 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
 const PORT = process.env.PORT || 3001;
 
@@ -34,11 +37,41 @@ if (process.env.DATABASE_URL) {
 // Express app initialization
 const app = express();
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Not an image! Please upload an image.'), false);
+        }
+    }
+});
+
 // Middleware setup
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, './')));
 app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -89,7 +122,17 @@ const initializeDatabase = async () => {
                 age INTEGER,
                 gender VARCHAR(50),
                 time_left INTEGER DEFAULT 3600,
-                terms_accepted BOOLEAN DEFAULT false
+                terms_accepted BOOLEAN DEFAULT false,
+                avatar_url TEXT,
+                feedback TEXT,
+                session_ended BOOLEAN DEFAULT false
+            );
+
+            CREATE TABLE IF NOT EXISTS reports (
+                id SERIAL PRIMARY KEY,
+                reported_username VARCHAR(255) NOT NULL,
+                reporting_username VARCHAR(255) NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
         console.log('Database tables initialized successfully');
@@ -127,14 +170,15 @@ const getComments = async (req, res, next) => {
                 FROM simulated_comments
                 UNION ALL
                 SELECT 
-                    id,
-                    username,
-                    comment,
-                    timestamp,
+                    c.id,
+                    c.username,
+                    c.comment,
+                    c.timestamp,
                     'normal' as type,
                     0 as delay,
-                    NULL as avatar_url
-                FROM comments
+                    u.avatar_url
+                FROM comments c
+                LEFT JOIN users u ON u.username = c.username
             )
             SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
@@ -160,18 +204,19 @@ const getNewComments = async (req, res, next) => {
                     delay,
                     avatar_url
                 FROM simulated_comments
-                WHERE timestamp > $1
+                WHERE timestamp > $1 AND username = $2
                 UNION ALL
                 SELECT 
-                    id,
-                    username,
-                    comment,
-                    timestamp,
+                    c.id,
+                    c.username,
+                    c.comment,
+                    c.timestamp,
                     'normal' as type,
                     0 as delay,
-                    NULL as avatar_url
-                FROM comments
-                WHERE timestamp > $1 AND username = $2
+                    u.avatar_url
+                FROM comments c
+                LEFT JOIN users u ON u.username = c.username
+                WHERE c.timestamp > $1 AND c.username = $2
             )
             SELECT * FROM ranked_comments 
             ORDER BY timestamp DESC
@@ -221,9 +266,10 @@ const getLastThreeComments = async (req, res, next) => {
                     comment,
                     timestamp,
                     'normal' as type,
-                    NULL as avatar_url
-                FROM comments
-                WHERE username = $1
+                    u.avatar_url
+                FROM comments c
+                LEFT JOIN users u ON u.username = c.username
+                WHERE c.username = $1
                 UNION ALL
                 SELECT 
                     id,
@@ -318,15 +364,22 @@ app.get('/api/time-left/:username', async (req, res) => {
     try {
         const { username } = req.params;
         const result = await executeQuery(
-            'SELECT time_left FROM users WHERE username = $1',
+            'SELECT time_left, session_ended FROM users WHERE username = $1',
             [username]
         );
-        
-        if (result.length > 0) {
-            res.json({ timeLeft: result[0].time_left });
-        } else {
-            res.status(404).json({ error: 'User not found' });
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
         }
+
+        const { time_left, session_ended } = result[0];
+
+        // If session is ended, return 0 time left
+        if (session_ended) {
+            return res.json({ timeLeft: 0 });
+        }
+
+        return res.json({ timeLeft: time_left });
     } catch (error) {
         console.error('Error getting time:', error);
         res.status(500).json({ error: 'Failed to get time' });
@@ -337,7 +390,7 @@ app.get('/api/time-left/:username', async (req, res) => {
 app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
-        
+
         if (timeLeft < 0) {
             return res.status(400).json({ error: 'Time left cannot be negative' });
         }
@@ -346,7 +399,7 @@ app.post('/api/update-time', async (req, res) => {
             'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
             [Math.max(0, timeLeft), username]
         );
-        
+
         if (result.length > 0) {
             // If the update was successful, return the updated time
             res.json({ timeLeft: result[0].time_left });
@@ -382,7 +435,7 @@ app.post('/api/update-time/beacon', async (req, res) => {
         }
 
         const { username, timeLeft } = data;
-        
+
         if (!username || timeLeft === undefined) {
             console.error('Missing required beacon data fields:', data);
             return res.status(400).end();
@@ -395,7 +448,7 @@ app.post('/api/update-time/beacon', async (req, res) => {
             'UPDATE users SET time_left = $1 WHERE username = $2',
             [validTimeLeft, username]
         );
-        
+
         res.status(200).end();
     } catch (error) {
         console.error('Error handling beacon time update:', error);
@@ -404,39 +457,63 @@ app.post('/api/update-time/beacon', async (req, res) => {
 });
 
 // Register new user
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', upload.single('avatar'), async (req, res) => {
     try {
-        const { firstName, lastName, age, gender, termsAccepted } = req.body;
-        
-        // Validate age
-        if (age < 18) {
-            return res.status(400).json({ error: 'You must be at least 18 years old to register' });
+        // Check if avatar was uploaded
+        if (!req.file) {
+            return res.status(400).json({ error: 'Profile picture is required' });
         }
 
-        // Capitalize first letter of each name and make the rest lowercase
+        const { firstName, lastName, age, gender, termsAccepted } = req.body;
+
+        // Basic validation
+        if (!firstName || !lastName || !age || !gender || !termsAccepted) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Age validation
+        if (parseInt(age) < 18) {
+            return res.status(400).json({ error: 'You must be at least 18 years old' });
+        }
+
+        // Capitalize first letter of each name
         const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
         const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
-        
-        // Check if user with same first name AND last name exists
-        const checkResult = await executeQuery(
-            'SELECT EXISTS(SELECT 1 FROM users WHERE first_name = $1 AND last_name = $2)',
-            [formattedFirstName, formattedLastName]
+        const username = `${formattedFirstName} ${formattedLastName}`;
+
+        // Check if user exists
+        const existingUser = await executeQuery(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists',
+            [username]
         );
-        
-        if (checkResult[0].exists) {
-            return res.status(400).json({ error: 'A user with this exact name already exists' });
+
+        if (existingUser[0].exists) {
+            return res.status(400).json({ error: 'A user with this name already exists' });
         }
 
-        // Insert new user with default time_left
-        await executeQuery(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, time_left)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [`${formattedFirstName} ${formattedLastName}`, formattedFirstName, formattedLastName, age, gender, termsAccepted, 900]
+        // Get avatar URL
+        const avatarUrl = `/uploads/${req.file.filename}`;
+
+        // Insert new user
+        const result = await executeQuery(
+            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING username`,
+            [
+                username,
+                formattedFirstName,
+                formattedLastName,
+                age,
+                gender,
+                termsAccepted === 'true',
+                avatarUrl,
+                900 // 15 minutes in seconds
+            ]
         );
 
         res.json({ 
-            username: `${formattedFirstName} ${formattedLastName}`,
-            timeLeft: 900 // Send initial time to client
+            username: result[0].username,
+            timeLeft: 900
         });
     } catch (error) {
         console.error('Error registering user:', error);
@@ -470,6 +547,132 @@ app.get('/api/users-time', async (req, res) => {
     } catch (error) {
         console.error('Error getting users time:', error);
         res.status(500).json({ error: 'Failed to get users time' });
+    }
+});
+
+// Add session status endpoint
+app.get('/api/session-status/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT session_ended FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ session_ended: result[0].session_ended });
+    } catch (error) {
+        console.error('Error checking session status:', error);
+        res.status(500).json({ error: 'Failed to check session status' });
+    }
+});
+
+// Add session termination endpoint
+app.post('/api/terminate-session', async (req, res) => {
+    try {
+        const { username, timeLeft } = req.body;
+
+        // Update the user's time_left and set session_ended to true
+        await executeQuery(
+            'UPDATE users SET time_left = $1, session_ended = true WHERE username = $2',
+            [timeLeft, username]
+        );
+
+        res.json({ message: 'Session terminated successfully' });
+    } catch (error) {
+        console.error('Error terminating session:', error);
+        res.status(500).json({ error: 'Failed to terminate session' });
+    }
+});
+
+// Add feedback endpoint
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { username, feedback } = req.body;
+
+        // First check if user exists
+        const userResult = await executeQuery(
+            'SELECT * FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (userResult.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Add feedback to existing user
+        await executeQuery(
+            'UPDATE users SET feedback = $1 WHERE username = $2',
+            [feedback, username]
+        );
+
+        res.json({ message: 'Feedback saved successfully' });
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        res.status(500).json({ error: 'Failed to save feedback' });
+    }
+});
+
+// Update session status endpoint
+app.post('/api/end-session', async (req, res) => {
+    try {
+        const { username } = req.body;
+        
+        await executeQuery(
+            'UPDATE users SET session_ended = true WHERE username = $1',
+            [username]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error ending session:', error);
+        res.status(500).json({ error: 'Failed to end session' });
+    }
+});
+
+// Get session status endpoint
+app.get('/api/session-status/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT session_ended FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ session_ended: result[0].session_ended });
+    } catch (error) {
+        console.error('Error checking session status:', error);
+        res.status(500).json({ error: 'Failed to check session status' });
+    }
+});
+
+// Get user feedback status
+app.get('/api/feedback-status/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const result = await executeQuery(
+            'SELECT feedback FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ 
+            hasFeedback: result[0].feedback !== null,
+            feedback: result[0].feedback 
+        });
+    } catch (error) {
+        console.error('Error checking feedback status:', error);
+        res.status(500).json({ error: 'Failed to check feedback status' });
     }
 });
 

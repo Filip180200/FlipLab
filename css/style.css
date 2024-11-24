@@ -1,12 +1,24 @@
 /* ==========================================================================
-   Combined Styles for FlipLab
+   Combined Styles for FlipLab - Import File
    ========================================================================== */
 
-/* Import all component styles */
+/* Import base styles */
 @import url('base.css');
+
+/* Import layout styles */
 @import url('layout.css');
+
+/* Import component styles */
 @import url('components.css');
+
+/* Import chat styles */
 @import url('chat.css');
+
+/* Import notification styles */
 @import url('notifications.css');
+
+/* Import animation styles */
 @import url('animations.css');
+
+/* Import channel styles */
 @import url('channels.css');
