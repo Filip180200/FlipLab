@@ -805,10 +805,14 @@ function formatNumberWithCommas(num) {
 
 // Update viewer count
 function updateViewerCount(viewerNumber) {
-    const viewerElements = document.querySelectorAll('.viewer-number');
-    viewerElements.forEach(element => {
-        element.textContent = formatNumberWithCommas(viewerNumber);
-    });
+    console.log('Updating viewer count to:', viewerNumber);
+    const viewerCountElement = document.getElementById('viewerCount');
+    if (viewerCountElement) {
+        viewerCountElement.textContent = formatNumberWithCommas(viewerNumber);
+        console.log('Viewer count updated successfully');
+    } else {
+        console.error('Viewer count element not found');
+    }
 }
 
 // Initialize app with test group info
@@ -827,12 +831,14 @@ async function initializeApp() {
             throw new Error('Failed to fetch user data');
         }
         const userData = await response.json();
+        console.log('User data received:', userData);
         
         // Update viewer count from database
-        if (userData.viewer_number) {
+        if (typeof userData.viewer_number === 'number') {
+            console.log('Setting viewer count to:', userData.viewer_number);
             updateViewerCount(userData.viewer_number);
         } else {
-            console.error('No viewer number in user data:', userData);
+            console.error('Invalid viewer number in user data:', userData.viewer_number);
         }
 
         // Load initial comments
@@ -849,5 +855,9 @@ async function initializeApp() {
     }
 }
 
-// Call initializeApp when the page loads
-document.addEventListener('DOMContentLoaded', initializeApp);
+// Make sure DOM is loaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
