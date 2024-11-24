@@ -110,12 +110,27 @@ const initializeDatabase = async () => {
                 -- Add viewer_number column if it doesn't exist
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                     WHERE table_name='users' AND column_name='viewer_number') THEN
-                    ALTER TABLE users ADD COLUMN viewer_number INTEGER DEFAULT 1200;
+                    ALTER TABLE users ADD COLUMN viewer_number INTEGER;
                 END IF;
             END $$;
 
+            -- Update viewer numbers based on test group
+            UPDATE users 
+            SET viewer_number = 
+                CASE 
+                    WHEN test_group IN ('a', 'b') THEN 124
+                    WHEN test_group IN ('c', 'd') THEN 11
+                    ELSE 124
+                END
+            WHERE viewer_number IS NULL OR viewer_number != 
+                CASE 
+                    WHEN test_group IN ('a', 'b') THEN 124
+                    WHEN test_group IN ('c', 'd') THEN 11
+                    ELSE 124
+                END;
+
             -- Update existing users to have viewer_number if not set
-            UPDATE users SET viewer_number = 1200 WHERE viewer_number IS NULL;
+            UPDATE users SET viewer_number = 124 WHERE viewer_number IS NULL;
 
             -- Create comments table if it doesn't exist
             CREATE TABLE IF NOT EXISTS comments (
