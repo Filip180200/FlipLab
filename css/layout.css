@@ -10,7 +10,8 @@
     box-sizing: border-box;
     gap: 20px;
     background-color: var(--bg-primary);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .main-content {
@@ -88,4 +89,67 @@
     font-size: 4em;
     color: #9147ff;
     margin-bottom: 20px;
+}
+
+/* Mobile Responsive Layout */
+@media screen and (max-width: 768px) {
+    body {
+        overflow: auto;
+    }
+
+    .content-wrapper {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .main-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .video-section {
+        width: 100%;
+    }
+
+    #player {
+        height: 250px;
+    }
+
+    .stream-info {
+        padding: 10px;
+    }
+
+    .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: var(--bg-primary);
+        padding: 10px;
+    }
+
+    .logo-container {
+        padding: 5px 10px;
+    }
+}
+
+/* Small phones */
+@media screen and (max-width: 480px) {
+    .content-wrapper {
+        padding: 5px;
+    }
+
+    #player {
+        height: 200px;
+    }
+
+    .site-header {
+        padding: 5px;
+    }
+
+    .logo-container {
+        padding: 5px;
+    }
 }
