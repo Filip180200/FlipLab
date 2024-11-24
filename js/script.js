@@ -104,31 +104,30 @@ function showNotification(message, type = 'info') {
 
 // Funkcje zarządzania komentarzami
 async function loadComments(isInitialLoad = false) {
-    try {
-        // Only load simulated comments on initial load
-        if (isInitialLoad) {
-            const simulatedComments = await fetch('/api/simulated_comments').then(res => res.json());
-            const chatMessages = document.querySelector('.chat-messages');
-            chatMessages.innerHTML = '';
-            displayedCommentIds.clear();
-            
-            // Schedule simulated comments
-            if (!simulatedCommentsScheduled && simulatedComments.length > 0) {
-                simulatedCommentsScheduled = true;
-                simulatedComments.forEach(comment => {
-                    setTimeout(() => {
-                        if (!displayedCommentIds.has(comment.id)) {
-                            const commentElement = createCommentElement(comment);
-                            chatMessages.appendChild(commentElement);
-                            displayedCommentIds.add(comment.id);
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
-                        }
-                    }, comment.delay * 1000);
-                });
-            }
+    const username = localStorage.getItem('username');
+    if (!username) return;
 
-            // Start polling for new real-time comments
-            startRealTimeComments();
+    try {
+        const response = await fetch(`${API_URL}/api/user/${username}`);
+        const userData = await response.json();
+        const commentsTable = userData.testGroup === 'a' || userData.testGroup === 'c' ? 1 : 2;
+
+        let endpoint = '/api/comments';
+        if (!isInitialLoad) {
+            endpoint = `/api/new-comments/${lastCommentTimestamp}`;
+        }
+
+        const commentsResponse = await fetch(`${API_URL}${endpoint}?table=${commentsTable}`);
+        const comments = await commentsResponse.json();
+
+        if (comments.length > 0) {
+            comments.forEach(comment => {
+                if (!displayedCommentIds.has(comment.id)) {
+                    addSingleComment(comment);
+                    displayedCommentIds.add(comment.id);
+                }
+            });
+            lastCommentTimestamp = comments[comments.length - 1].timestamp;
         }
     } catch (error) {
         console.error('Error loading comments:', error);
@@ -136,7 +135,7 @@ async function loadComments(isInitialLoad = false) {
 }
 
 // New function to handle real-time comments
-async function startRealTimeComments() {
+async function startRealTimeComments(commentsTable = 1) {
     // Clear any existing interval
     if (commentUpdateInterval) {
         clearInterval(commentUpdateInterval);
@@ -148,7 +147,7 @@ async function startRealTimeComments() {
     // Poll for new comments every 2 seconds
     commentUpdateInterval = setInterval(async () => {
         try {
-            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}&username=${encodeURIComponent(currentUser)}`);
+            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}&username=${encodeURIComponent(currentUser)}&table=${commentsTable}`);
             const newComments = await response.json();
             
             if (newComments.length > 0) {
@@ -795,12 +794,40 @@ window.addEventListener('load', async () => {
 async function initializeApp() {
     console.log('Initializing app...');
     
-    // Start real-time comments
-    startRealTimeComments();
-    
-    // Setup channel interactions
-    setupChannelInteractions();
-    
-    // Load initial comments
-    loadComments(true);
+    const username = localStorage.getItem('username');
+    if (!username) {
+        window.location.href = '/thank-you.html';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/user/${username}`);
+        const userData = await response.json();
+        
+        // Update viewer count based on test group
+        if (userData.viewerNumber) {
+            updateViewerCount(userData.viewerNumber);
+        }
+
+        // Start real-time comments based on test group
+        const commentsTable = userData.testGroup === 'a' || userData.testGroup === 'c' ? 1 : 2;
+        startRealTimeComments(commentsTable);
+        
+        // Start countdown
+        startCountdown();
+        
+        // Setup channel interactions
+        setupChannelInteractions();
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showNotification('Error loading user data', 'error');
+    }
+}
+
+// Update viewer count based on test group
+function updateViewerCount(viewerNumber) {
+    const viewerElements = document.querySelectorAll('.viewer-number');
+    viewerElements.forEach(element => {
+        element.textContent = formatNumber(viewerNumber);
+    });
 }

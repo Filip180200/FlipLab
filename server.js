@@ -105,7 +105,16 @@ const initializeDatabase = async () => {
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS simulated_comments (
+            CREATE TABLE IF NOT EXISTS simulated_comments_1 (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url TEXT,
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                delay INTEGER DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS simulated_comments_2 (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
                 avatar_url TEXT,
@@ -125,7 +134,9 @@ const initializeDatabase = async () => {
                 terms_accepted BOOLEAN DEFAULT false,
                 avatar_url TEXT,
                 feedback TEXT,
-                session_ended BOOLEAN DEFAULT false
+                session_ended BOOLEAN DEFAULT false,
+                test_group VARCHAR(1) DEFAULT 'a',
+                viewer_number INTEGER DEFAULT 124
             );
 
             CREATE TABLE IF NOT EXISTS reports (
@@ -134,12 +145,28 @@ const initializeDatabase = async () => {
                 reporting_username VARCHAR(255) NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            -- Drop the old simulated_comments table if it exists
+            DROP TABLE IF EXISTS simulated_comments;
         `);
         console.log('Database tables initialized successfully');
     } catch (err) {
         console.error('Error initializing database tables:', err);
         process.exit(1);
     }
+};
+
+// Add test group assignment to registration
+const assignTestGroup = async (username) => {
+    const groups = ['a', 'b', 'c', 'd'];
+    const randomGroup = groups[Math.floor(Math.random() * groups.length)];
+    const viewerNumber = (randomGroup === 'a' || randomGroup === 'b') ? 124 : 11;
+    
+    await pool.query(
+        'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
+        [randomGroup, viewerNumber, username]
+    );
+    return { group: randomGroup, viewerNumber };
 };
 
 // Database query helper
@@ -167,7 +194,17 @@ const getComments = async (req, res, next) => {
                     'simulated' as type,
                     delay,
                     avatar_url
-                FROM simulated_comments
+                FROM simulated_comments_1
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    delay,
+                    avatar_url
+                FROM simulated_comments_2
                 UNION ALL
                 SELECT 
                     c.id,
@@ -203,7 +240,18 @@ const getNewComments = async (req, res, next) => {
                     'simulated' as type,
                     delay,
                     avatar_url
-                FROM simulated_comments
+                FROM simulated_comments_1
+                WHERE timestamp > $1 AND username = $2
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    delay,
+                    avatar_url
+                FROM simulated_comments_2
                 WHERE timestamp > $1 AND username = $2
                 UNION ALL
                 SELECT 
@@ -278,7 +326,17 @@ const getLastThreeComments = async (req, res, next) => {
                     timestamp,
                     'simulated' as type,
                     avatar_url
-                FROM simulated_comments
+                FROM simulated_comments_1
+                WHERE username = $1
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    avatar_url
+                FROM simulated_comments_2
                 WHERE username = $1
             )
             SELECT * FROM ranked_comments 
@@ -333,7 +391,10 @@ const getSimulatedComments = async (req, res, next) => {
     try {
         const query = `
             SELECT id, username, avatar_url, comment, timestamp, delay
-            FROM simulated_comments
+            FROM simulated_comments_1
+            UNION ALL
+            SELECT id, username, avatar_url, comment, timestamp, delay
+            FROM simulated_comments_2
             ORDER BY timestamp DESC
         `;
         const comments = await executeQuery(query);
@@ -345,13 +406,13 @@ const getSimulatedComments = async (req, res, next) => {
 
 const addSimulatedComment = async (req, res, next) => {
     try {
-        const { username, comment, delay, avatar_url } = req.body;
+        const { username, comment, delay, avatar_url, type } = req.body;
         
         if (!username || !comment) {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO simulated_comments (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)';
+        const query = `INSERT INTO simulated_comments_${type} (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)`;
         await executeQuery(query, [username, comment, avatar_url, delay]);
         res.status(201).json({ message: 'Simulated comment added successfully' });
     } catch (err) {
@@ -511,9 +572,14 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
             ]
         );
 
+        // Assign test group
+        const { group, viewerNumber } = await assignTestGroup(username);
+
         res.json({ 
             username: result[0].username,
-            timeLeft: 900
+            timeLeft: 900,
+            testGroup: group,
+            viewerNumber
         });
     } catch (error) {
         console.error('Error registering user:', error);
