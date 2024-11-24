@@ -237,6 +237,46 @@ form.addEventListener('submit', async function(e) {
     }
 });
 
+// Terms and Conditions Modal
+const termsModal = document.getElementById('termsModal');
+const termsLabel = document.getElementById('termsLabel');
+const acceptTermsBtn = document.getElementById('acceptTerms');
+const termsCheckbox = document.getElementById('terms');
+
+// Function to open terms modal
+const openTermsModal = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    termsModal.style.display = 'block';
+};
+
+// Add click handlers for both the label and checkbox
+termsLabel.addEventListener('click', openTermsModal);
+termsCheckbox.addEventListener('click', openTermsModal);
+
+// Close modal when clicking the close button or outside the modal
+termsModal.querySelector('.close-modal').addEventListener('click', () => {
+    termsModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target === termsModal) {
+        termsModal.style.display = 'none';
+    }
+});
+
+// Handle terms acceptance
+acceptTermsBtn.addEventListener('click', () => {
+    termsCheckbox.checked = true;
+    termsModal.style.display = 'none';
+});
+
+// Prevent manual checkbox manipulation
+termsCheckbox.addEventListener('click', (e) => {
+    e.preventDefault(); // Prevent default checkbox behavior
+    openTermsModal(e); // Open modal instead
+});
+
 // Check if user is already logged in
 document.addEventListener('DOMContentLoaded', () => {
     const username = localStorage.getItem('username');

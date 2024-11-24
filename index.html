@@ -55,7 +55,7 @@
             </div>
 
             <div class="form-group full-width">
-                <label for="avatar">Profile Picture (required):</label>
+                <label for="avatar">Profile Picture:</label>
                 <input type="file" id="avatar" accept="image/*" required lang="en">
                 <div id="avatar-preview" class="avatar-preview">
                     <img id="avatar-image" style="display: none;">
@@ -63,9 +63,9 @@
             </div>
 
             <div class="form-group terms-group">
-                <label class="terms-label">
-                    <input type="checkbox" id="terms" required>
-                    I accept the terms and conditions
+                <label class="terms-label" id="termsLabel">
+                    <input type="checkbox" id="terms" required disabled>
+                    <span>I accept the terms and conditions</span>
                 </label>
             </div>
 
@@ -106,8 +106,48 @@
         </div>
     </div>
 
+    <!-- Terms and Conditions Modal -->
+    <div id="termsModal" class="modal">
+        <div class="modal-content terms-modal-content">
+            <div class="modal-header">
+                <h3>Terms and Conditions</h3>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body terms-body">
+                <h4>1. Research Participation Agreement</h4>
+                <p>By participating in this study, you acknowledge and agree that:</p>
+                <ul>
+                    <li>Your participation is voluntary and you can withdraw at any time</li>
+                    <li>Your session will be limited to 15 minutes</li>
+                    <li>Your interactions and behavior during the session will be recorded for research purposes</li>
+                    <li>All collected data will be anonymized and used solely for research purposes</li>
+                </ul>
+
+                <h4>2. Privacy Policy</h4>
+                <p>We are committed to protecting your privacy. Your personal information will:</p>
+                <ul>
+                    <li>Be kept confidential and secure</li>
+                    <li>Only be used for the stated research purposes</li>
+                    <li>Not be shared with third parties</li>
+                    <li>Be deleted upon your request</li>
+                </ul>
+
+                <h4>3. Code of Conduct</h4>
+                <p>During your participation, you agree to:</p>
+                <ul>
+                    <li>Interact respectfully with other participants</li>
+                    <li>Not engage in any form of harassment or inappropriate behavior</li>
+                    <li>Not attempt to manipulate or disrupt the research environment</li>
+                </ul>
+
+                <div class="terms-actions">
+                    <button type="button" id="acceptTerms" class="accept-terms-btn">Accept Terms & Conditions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
     <script src="js/login.js"></script>
 </body>
 </html>

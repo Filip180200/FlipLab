@@ -76,6 +76,34 @@
     transform: translateY(-1px);
 }
 
+.no-feedback-allowed {
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.no-feedback-allowed p {
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.return-home {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.return-home:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
 /* Message Notifications */
 .message {
     position: fixed;

@@ -5,7 +5,7 @@
 .channels-sidebar {
     width: 60px;
     background: #1f1f23;
-    height: 100vh;
+    height: 92%;
     transition: width 0.2s ease;
     overflow: hidden;
 }

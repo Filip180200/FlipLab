@@ -3,7 +3,13 @@ const API_URL = 'https://fliplab.onrender.com';
 async function checkFeedbackStatus() {
     const username = localStorage.getItem('username');
     if (!username) {
-        showMessage('User not found', 'error');
+        const feedbackSection = document.getElementById('feedbackSection');
+        feedbackSection.innerHTML = `
+            <div class="no-feedback-allowed">
+                <p>Session expired or invalid. Please start a new session.</p>
+                <a href="/" class="return-home">Return to Home</a>
+            </div>
+        `;
         return;
     }
 
