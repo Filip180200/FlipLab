@@ -68,6 +68,10 @@ function formatNumber(num) {
     return num.toString();
 }
 
+function formatNumberWithCommas(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 function showNotification(message, type = 'info') {
     // In-app notification only
     const notification = document.createElement('div');
@@ -108,26 +112,30 @@ async function loadComments(isInitialLoad = false) {
     if (!username) return;
 
     try {
-        const response = await fetch(`${API_URL}/api/user/${username}`);
-        const userData = await response.json();
-        const commentsTable = userData.testGroup === 'a' || userData.testGroup === 'c' ? 1 : 2;
+        // Only load simulated comments on initial load
+        if (isInitialLoad) {
+            const simulatedComments = await fetch(`/api/simulated_comments?username=${encodeURIComponent(username)}`).then(res => res.json());
+            const chatMessages = document.querySelector('.chat-messages');
+            chatMessages.innerHTML = '';
+            displayedCommentIds.clear();
+            
+            // Schedule simulated comments
+            if (!simulatedCommentsScheduled && simulatedComments.length > 0) {
+                simulatedCommentsScheduled = true;
+                simulatedComments.forEach(comment => {
+                    setTimeout(() => {
+                        if (!displayedCommentIds.has(comment.id)) {
+                            const commentElement = createCommentElement(comment);
+                            chatMessages.appendChild(commentElement);
+                            displayedCommentIds.add(comment.id);
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    }, comment.delay * 1000);
+                });
+            }
 
-        let endpoint = '/api/comments';
-        if (!isInitialLoad) {
-            endpoint = `/api/new-comments/${lastCommentTimestamp}`;
-        }
-
-        const commentsResponse = await fetch(`${API_URL}${endpoint}?table=${commentsTable}`);
-        const comments = await commentsResponse.json();
-
-        if (comments.length > 0) {
-            comments.forEach(comment => {
-                if (!displayedCommentIds.has(comment.id)) {
-                    addSingleComment(comment);
-                    displayedCommentIds.add(comment.id);
-                }
-            });
-            lastCommentTimestamp = comments[comments.length - 1].timestamp;
+            // Start polling for new real-time comments
+            startRealTimeComments();
         }
     } catch (error) {
         console.error('Error loading comments:', error);
@@ -702,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Settings button notification
     const settingsButton = document.querySelector('.settings-btn');
     if (settingsButton) {
@@ -804,12 +812,13 @@ async function initializeApp() {
         const response = await fetch(`${API_URL}/api/user/${username}`);
         const userData = await response.json();
         
-        // Update viewer count
-        updateViewerCount();
+        // Update viewer count from database
+        if (userData.viewer_number) {
+            updateViewerCount(userData.viewer_number);
+        }
 
-        // Start real-time comments based on test group
-        const commentsTable = userData.testGroup === 'a' || userData.testGroup === 'c' ? 1 : 2;
-        startRealTimeComments(commentsTable);
+        // Load initial comments
+        loadComments(true);
         
         // Start countdown
         startCountdown();
@@ -823,9 +832,13 @@ async function initializeApp() {
 }
 
 // Update viewer count
-function updateViewerCount() {
+function updateViewerCount(viewerNumber) {
     const viewerElements = document.querySelectorAll('.viewer-number');
     viewerElements.forEach(element => {
-        element.textContent = '1,200';
+        element.textContent = formatNumberWithCommas(viewerNumber);
     });
+}
+
+function formatNumberWithCommas(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

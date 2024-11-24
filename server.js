@@ -110,9 +110,12 @@ const initializeDatabase = async () => {
                 -- Add viewer_number column if it doesn't exist
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                     WHERE table_name='users' AND column_name='viewer_number') THEN
-                    ALTER TABLE users ADD COLUMN viewer_number INTEGER DEFAULT 124;
+                    ALTER TABLE users ADD COLUMN viewer_number INTEGER DEFAULT 1200;
                 END IF;
             END $$;
+
+            -- Update existing users to have viewer_number if not set
+            UPDATE users SET viewer_number = 1200 WHERE viewer_number IS NULL;
 
             -- Create comments table if it doesn't exist
             CREATE TABLE IF NOT EXISTS comments (
@@ -408,13 +411,15 @@ const reportUser = async (req, res, next) => {
 
 const getSimulatedComments = async (req, res, next) => {
     try {
+        const { username } = req.query;
+        const userResult = await pool.query('SELECT test_group FROM users WHERE username = $1', [username]);
+        const testGroup = userResult.rows[0]?.test_group || 'a';
+        const tableNumber = (testGroup === 'a' || testGroup === 'c') ? 1 : 2;
+
         const query = `
             SELECT id, username, avatar_url, comment, timestamp, delay
-            FROM simulated_comments_1
-            UNION ALL
-            SELECT id, username, avatar_url, comment, timestamp, delay
-            FROM simulated_comments_2
-            ORDER BY timestamp DESC
+            FROM simulated_comments_${tableNumber}
+            ORDER BY timestamp ASC
         `;
         const comments = await executeQuery(query);
         res.json(comments);
@@ -425,13 +430,17 @@ const getSimulatedComments = async (req, res, next) => {
 
 const addSimulatedComment = async (req, res, next) => {
     try {
-        const { username, comment, delay, avatar_url, type } = req.body;
+        const { username, comment, delay, avatar_url } = req.body;
         
         if (!username || !comment) {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = `INSERT INTO simulated_comments_${type} (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)`;
+        const userResult = await pool.query('SELECT test_group FROM users WHERE username = $1', [username]);
+        const testGroup = userResult.rows[0]?.test_group || 'a';
+        const tableNumber = (testGroup === 'a' || testGroup === 'c') ? 1 : 2;
+
+        const query = `INSERT INTO simulated_comments_${tableNumber} (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)`;
         await executeQuery(query, [username, comment, avatar_url, delay]);
         res.status(201).json({ message: 'Simulated comment added successfully' });
     } catch (err) {
