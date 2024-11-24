@@ -593,20 +593,23 @@ app.post('/api/feedback', async (req, res) => {
     try {
         const { username, feedback } = req.body;
 
-        const result = await pool.query(
-            'UPDATE users SET feedback = $1 WHERE username = $2 RETURNING *',
+        // First check if user exists
+        const userResult = await executeQuery(
+            'SELECT * FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (userResult.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Add feedback to existing user
+        await executeQuery(
+            'UPDATE users SET feedback = $1 WHERE username = $2',
             [feedback, username]
         );
 
-        if (result.rows.length === 0) {
-            // If user not found, create a new record for anonymous feedback
-            await pool.query(
-                'INSERT INTO users (username, feedback) VALUES ($1, $2)',
-                [username, feedback]
-            );
-        }
-
-        res.json({ message: 'Feedback submitted successfully' });
+        res.json({ message: 'Feedback saved successfully' });
     } catch (error) {
         console.error('Error saving feedback:', error);
         res.status(500).json({ error: 'Failed to save feedback' });
