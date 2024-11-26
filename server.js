@@ -199,7 +199,7 @@ const initializeDatabase = async () => {
     }
 };
 
-// Group counters for even distribution
+// Group counters for even distribution (only counting finished sessions)
 let groupCounters = {
     a: 0,
     b: 0,
@@ -218,21 +218,21 @@ const assignTestGroup = () => {
     // Select random group from available ones
     const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
     
-    // Increment counter for selected group
-    groupCounters[selectedGroup]++;
+    // Note: We don't increment the counter here anymore
+    // Counter will be incremented when time_left reaches 0
     
-    // Log current distribution
-    console.log('Group distribution after assignment:', groupCounters);
+    // Log current distribution of finished sessions
+    console.log('Finished sessions distribution:', groupCounters);
     
     const viewerNumber = (selectedGroup === 'a' || selectedGroup === 'b') ? 124 : 11;
     return { group: selectedGroup, viewerNumber };
 };
 
-// Initialize group counters from database on startup
+// Initialize group counters from database on startup (only counting finished sessions)
 const initializeGroupCounters = async () => {
     try {
         const result = await pool.query(
-            'SELECT test_group, COUNT(*) as count FROM users GROUP BY test_group'
+            'SELECT test_group, COUNT(*) as count FROM users WHERE time_left = 0 GROUP BY test_group'
         );
         
         // Reset counters
@@ -243,16 +243,36 @@ const initializeGroupCounters = async () => {
             d: 0
         };
         
-        // Update counters from database
+        // Update counters from database (only finished sessions)
         result.rows.forEach(row => {
             if (row.test_group && groupCounters.hasOwnProperty(row.test_group)) {
                 groupCounters[row.test_group] = parseInt(row.count);
             }
         });
         
-        console.log('Initialized group counters:', groupCounters);
+        console.log('Initialized finished sessions counters:', groupCounters);
     } catch (error) {
         console.error('Error initializing group counters:', error);
+    }
+};
+
+// Update group counter when a session finishes
+const updateGroupCounter = async (username) => {
+    try {
+        const result = await pool.query(
+            'SELECT test_group FROM users WHERE username = $1',
+            [username]
+        );
+        
+        if (result.rows.length > 0) {
+            const group = result.rows[0].test_group;
+            if (groupCounters.hasOwnProperty(group)) {
+                groupCounters[group]++;
+                console.log(`Updated group counter for ${group}:`, groupCounters);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating group counter:', error);
     }
 };
 
@@ -544,22 +564,19 @@ app.get('/api/time-left/:username', async (req, res) => {
 app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
-
-        if (timeLeft < 0) {
-            return res.status(400).json({ error: 'Time left cannot be negative' });
-        }
-
-        const result = await executeQuery(
-            'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
-            [Math.max(0, timeLeft), username]
+        
+        // Update time_left in database
+        await pool.query(
+            'UPDATE users SET time_left = $1 WHERE username = $2',
+            [timeLeft, username]
         );
 
-        if (result.length > 0) {
-            // If the update was successful, return the updated time
-            res.json({ timeLeft: result[0].time_left });
-        } else {
-            res.status(404).json({ error: 'User not found' });
+        // If time reached 0, update group counter
+        if (timeLeft === 0) {
+            await updateGroupCounter(username);
         }
+
+        res.json({ success: true });
     } catch (error) {
         console.error('Error updating time:', error);
         res.status(500).json({ error: 'Failed to update time' });
