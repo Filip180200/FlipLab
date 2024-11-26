@@ -56,9 +56,9 @@
 .form-group input[type="text"]:focus,
 .form-group input[type="number"]:focus,
 .form-group select:focus {
-    border-color: #8b5cf6;
+    border-color: #415280;
     background-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 0 2px rgba(65, 82, 128, 0.2);
     outline: none;
 }
 
@@ -76,7 +76,7 @@
 
 .form-group input[type="file"]::-webkit-file-upload-button,
 .form-group input[type="file"]::file-selector-button {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background: linear-gradient(135deg, #415280, #374671);
     color: white;
     padding: 8px 16px;
     border: none;
@@ -89,7 +89,7 @@
 
 .form-group input[type="file"]::-webkit-file-upload-button:hover,
 .form-group input[type="file"]::file-selector-button:hover {
-    background: linear-gradient(135deg, #9f75ff, #8b5cf6);
+    background: linear-gradient(135deg, #374671, #415280);
     transform: translateY(-1px);
 }
 
@@ -123,9 +123,9 @@
 
 /* Style the select when opened */
 .form-group select:focus {
-    border-color: #8b5cf6;
+    border-color: #415280;
     background-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 0 2px rgba(65, 82, 128, 0.2);
     outline: none;
 }
 
@@ -133,7 +133,7 @@
 .form-group select option:hover,
 .form-group select option:focus,
 .form-group select option:active {
-    background-color: #8b5cf6;
+    background-color: #415280;
     color: #ffffff;
 }
 
@@ -204,8 +204,8 @@
 }
 
 .terms-label input[type="checkbox"]:checked {
-    background-color: #8b5cf6;
-    border-color: #8b5cf6;
+    background-color: #415280;
+    border-color: #415280;
 }
 
 .terms-label input[type="checkbox"]:checked::before {
@@ -237,7 +237,8 @@
 .btn-primary {
     width: 100%;
     padding: 12px;
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    background: #415280;
+    border-color: #415280;
     color: white;
     border: none;
     border-radius: 8px;
@@ -249,15 +250,16 @@
 
 .auth-form button[type="submit"]:hover,
 .btn-primary:hover {
+    background: #374671;
+    border-color: #374671;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-    background: linear-gradient(135deg, #9f75ff, #8b5cf6);
+    box-shadow: 0 6px 20px rgba(65, 82, 128, 0.4);
 }
 
 .auth-form button[type="submit"]:active,
 .btn-primary:active {
     transform: translateY(1px);
-    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 2px 10px rgba(65, 82, 128, 0.3);
 }
 
 /* Add scrollbar styling */
@@ -271,12 +273,12 @@
 }
 
 .auth-form::-webkit-scrollbar-thumb {
-    background: #8b5cf6;
+    background: #415280;
     border-radius: 4px;
 }
 
 .auth-form::-webkit-scrollbar-thumb:hover {
-    background: #7c3aed;
+    background: #374671;
 }
 
 /* Modal Styles */
@@ -350,11 +352,14 @@
 }
 
 .close-modal:hover {
-    color: #8b5cf6;
+    color: #415280;
 }
 
-.modal-body {
-    margin-bottom: 25px;
+.modal-body,
+.terms-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
 }
 
 .image-container {
@@ -373,7 +378,7 @@
 }
 
 .editor-btn {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background: linear-gradient(135deg, #415280, #374671);
     color: #ffffff;
     border: none;
     border-radius: 10px;
@@ -381,7 +386,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 16px;
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 8px rgba(65, 82, 128, 0.2);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -389,14 +394,14 @@
 }
 
 .editor-btn:hover {
-    background: linear-gradient(135deg, #9f75ff, #8b5cf6);
+    background: linear-gradient(135deg, #374671, #415280);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(65, 82, 128, 0.3);
 }
 
 .editor-btn:active {
     transform: translateY(1px);
-    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 6px rgba(65, 82, 128, 0.2);
 }
 
 .editor-btn i {
@@ -443,15 +448,17 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background: #415280;
+    border-color: #415280;
     color: #ffffff;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 4px 15px rgba(65, 82, 128, 0.3);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #9f75ff, #8b5cf6);
+    background: #374671;
+    border-color: #374671;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 6px 20px rgba(65, 82, 128, 0.4);
 }
 
 /* Cropper.js custom styles */
@@ -462,11 +469,11 @@
 
 .cropper-line,
 .cropper-point {
-    background-color: #8b5cf6;
+    background-color: #415280;
 }
 
 .cropper-view-box {
-    box-shadow: 0 0 0 1px #8b5cf6;
+    box-shadow: 0 0 0 1px #415280;
     outline: 0;
 }
 
@@ -606,7 +613,7 @@
 }
 
 .accept-terms-btn {
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    background: linear-gradient(135deg, #415280, #374671);
     color: white;
     padding: 12px 24px;
     border: none;
@@ -617,7 +624,7 @@
 }
 
 .accept-terms-btn:hover {
-    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    background: linear-gradient(135deg, #374671, #415280);
     transform: translateY(-1px);
 }
 
@@ -638,6 +645,6 @@
 }
 
 .terms-label #termsLink {
-    color: #4f46e5;
+    color: #415280;
     text-decoration: underline;
 }

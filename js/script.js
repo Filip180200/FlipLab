@@ -68,6 +68,10 @@ function formatNumber(num) {
     return num.toString();
 }
 
+function formatNumberWithCommas(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 function showNotification(message, type = 'info') {
     // In-app notification only
     const notification = document.createElement('div');
@@ -104,10 +108,13 @@ function showNotification(message, type = 'info') {
 
 // Funkcje zarządzania komentarzami
 async function loadComments(isInitialLoad = false) {
+    const username = localStorage.getItem('username');
+    if (!username) return;
+
     try {
         // Only load simulated comments on initial load
         if (isInitialLoad) {
-            const simulatedComments = await fetch('/api/simulated_comments').then(res => res.json());
+            const simulatedComments = await fetch(`/api/simulated_comments?username=${encodeURIComponent(username)}`).then(res => res.json());
             const chatMessages = document.querySelector('.chat-messages');
             chatMessages.innerHTML = '';
             displayedCommentIds.clear();
@@ -136,7 +143,7 @@ async function loadComments(isInitialLoad = false) {
 }
 
 // New function to handle real-time comments
-async function startRealTimeComments() {
+async function startRealTimeComments(commentsTable = 1) {
     // Clear any existing interval
     if (commentUpdateInterval) {
         clearInterval(commentUpdateInterval);
@@ -148,7 +155,7 @@ async function startRealTimeComments() {
     // Poll for new comments every 2 seconds
     commentUpdateInterval = setInterval(async () => {
         try {
-            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}&username=${encodeURIComponent(currentUser)}`);
+            const response = await fetch(`/api/new-comments?lastTimestamp=${lastCommentTimestamp}&username=${encodeURIComponent(currentUser)}&table=${commentsTable}`);
             const newComments = await response.json();
             
             if (newComments.length > 0) {
@@ -703,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Settings button notification
     const settingsButton = document.querySelector('.settings-btn');
     if (settingsButton) {
@@ -791,16 +798,66 @@ window.addEventListener('load', async () => {
     }
 });
 
-// Initialize function
+// Format number with commas
+function formatNumberWithCommas(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Update viewer count
+function updateViewerCount(viewerNumber) {
+    console.log('Updating viewer count to:', viewerNumber);
+    const viewerCountElement = document.getElementById('viewerCount');
+    if (viewerCountElement) {
+        viewerCountElement.textContent = formatNumberWithCommas(viewerNumber);
+        console.log('Viewer count updated successfully');
+    } else {
+        console.error('Viewer count element not found');
+    }
+}
+
+// Initialize app with test group info
 async function initializeApp() {
     console.log('Initializing app...');
     
-    // Start real-time comments
-    startRealTimeComments();
-    
-    // Setup channel interactions
-    setupChannelInteractions();
-    
-    // Load initial comments
-    loadComments(true);
+    const username = localStorage.getItem('username');
+    if (!username) {
+        window.location.href = '/thank-you.html';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/user/${username}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user data');
+        }
+        const userData = await response.json();
+        console.log('User data received:', userData);
+        
+        // Update viewer count from database
+        if (typeof userData.viewer_number === 'number') {
+            console.log('Setting viewer count to:', userData.viewer_number);
+            updateViewerCount(userData.viewer_number);
+        } else {
+            console.error('Invalid viewer number in user data:', userData.viewer_number);
+        }
+
+        // Load initial comments
+        loadComments(true);
+        
+        // Start countdown
+        startCountdown();
+        
+        // Setup channel interactions
+        setupChannelInteractions();
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showNotification('Error loading user data', 'error');
+    }
+}
+
+// Make sure DOM is loaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
 }

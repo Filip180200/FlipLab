@@ -98,6 +98,47 @@ const initializeDatabase = async () => {
     try {
         // Create tables if they don't exist
         await pool.query(`
+            -- Alter users table to add new columns
+            DO $$ 
+            BEGIN
+                -- Add test_group column if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='test_group') THEN
+                    ALTER TABLE users ADD COLUMN test_group VARCHAR(1) DEFAULT 'a';
+                END IF;
+
+                -- Add viewer_number column if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='viewer_number') THEN
+                    ALTER TABLE users ADD COLUMN viewer_number INTEGER;
+                END IF;
+
+                -- Add device_type column if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='device_type') THEN
+                    ALTER TABLE users ADD COLUMN device_type VARCHAR(50);
+                END IF;
+            END $$;
+
+            -- Update viewer numbers based on test group
+            UPDATE users 
+            SET viewer_number = 
+                CASE 
+                    WHEN test_group IN ('a', 'b') THEN 124
+                    WHEN test_group IN ('c', 'd') THEN 11
+                    ELSE 124
+                END
+            WHERE viewer_number IS NULL OR viewer_number != 
+                CASE 
+                    WHEN test_group IN ('a', 'b') THEN 124
+                    WHEN test_group IN ('c', 'd') THEN 11
+                    ELSE 124
+                END;
+
+            -- Update existing users to have viewer_number if not set
+            UPDATE users SET viewer_number = 124 WHERE viewer_number IS NULL;
+
+            -- Create comments table if it doesn't exist
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
@@ -105,7 +146,8 @@ const initializeDatabase = async () => {
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
-            CREATE TABLE IF NOT EXISTS simulated_comments (
+            -- Create simulated_comments_1 table
+            CREATE TABLE IF NOT EXISTS simulated_comments_1 (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) NOT NULL,
                 avatar_url TEXT,
@@ -114,6 +156,17 @@ const initializeDatabase = async () => {
                 delay INTEGER DEFAULT 0
             );
 
+            -- Create simulated_comments_2 table
+            CREATE TABLE IF NOT EXISTS simulated_comments_2 (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                avatar_url TEXT,
+                comment TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                delay INTEGER DEFAULT 0
+            );
+
+            -- Create users table if it doesn't exist
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) UNIQUE NOT NULL,
@@ -128,17 +181,98 @@ const initializeDatabase = async () => {
                 session_ended BOOLEAN DEFAULT false
             );
 
+            -- Create reports table if it doesn't exist
             CREATE TABLE IF NOT EXISTS reports (
                 id SERIAL PRIMARY KEY,
                 reported_username VARCHAR(255) NOT NULL,
                 reporting_username VARCHAR(255) NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            -- Drop the old simulated_comments table if it exists
+            DROP TABLE IF EXISTS simulated_comments;
         `);
         console.log('Database tables initialized successfully');
     } catch (err) {
         console.error('Error initializing database tables:', err);
         process.exit(1);
+    }
+};
+
+// Group counters for even distribution (only counting finished sessions)
+let groupCounters = {
+    a: 0,
+    b: 0,
+    c: 0,
+    d: 0
+};
+
+// Add test group assignment to registration
+const assignTestGroup = () => {
+    const groups = ['a', 'b', 'c', 'd'];
+    
+    // Find group(s) with minimum count
+    const minCount = Math.min(...Object.values(groupCounters));
+    const availableGroups = groups.filter(group => groupCounters[group] === minCount);
+    
+    // Select random group from available ones
+    const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
+    
+    // Note: We don't increment the counter here anymore
+    // Counter will be incremented when time_left reaches 0
+    
+    // Log current distribution of finished sessions
+    console.log('Finished sessions distribution:', groupCounters);
+    
+    const viewerNumber = (selectedGroup === 'a' || selectedGroup === 'b') ? 124 : 11;
+    return { group: selectedGroup, viewerNumber };
+};
+
+// Initialize group counters from database on startup (only counting finished sessions)
+const initializeGroupCounters = async () => {
+    try {
+        const result = await pool.query(
+            'SELECT test_group, COUNT(*) as count FROM users WHERE time_left = 0 GROUP BY test_group'
+        );
+        
+        // Reset counters
+        groupCounters = {
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0
+        };
+        
+        // Update counters from database (only finished sessions)
+        result.rows.forEach(row => {
+            if (row.test_group && groupCounters.hasOwnProperty(row.test_group)) {
+                groupCounters[row.test_group] = parseInt(row.count);
+            }
+        });
+        
+        console.log('Initialized finished sessions counters:', groupCounters);
+    } catch (error) {
+        console.error('Error initializing group counters:', error);
+    }
+};
+
+// Update group counter when a session finishes
+const updateGroupCounter = async (username) => {
+    try {
+        const result = await pool.query(
+            'SELECT test_group FROM users WHERE username = $1',
+            [username]
+        );
+        
+        if (result.rows.length > 0) {
+            const group = result.rows[0].test_group;
+            if (groupCounters.hasOwnProperty(group)) {
+                groupCounters[group]++;
+                console.log(`Updated group counter for ${group}:`, groupCounters);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating group counter:', error);
     }
 };
 
@@ -167,7 +301,17 @@ const getComments = async (req, res, next) => {
                     'simulated' as type,
                     delay,
                     avatar_url
-                FROM simulated_comments
+                FROM simulated_comments_1
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    delay,
+                    avatar_url
+                FROM simulated_comments_2
                 UNION ALL
                 SELECT 
                     c.id,
@@ -203,7 +347,18 @@ const getNewComments = async (req, res, next) => {
                     'simulated' as type,
                     delay,
                     avatar_url
-                FROM simulated_comments
+                FROM simulated_comments_1
+                WHERE timestamp > $1 AND username = $2
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    delay,
+                    avatar_url
+                FROM simulated_comments_2
                 WHERE timestamp > $1 AND username = $2
                 UNION ALL
                 SELECT 
@@ -278,7 +433,17 @@ const getLastThreeComments = async (req, res, next) => {
                     timestamp,
                     'simulated' as type,
                     avatar_url
-                FROM simulated_comments
+                FROM simulated_comments_1
+                WHERE username = $1
+                UNION ALL
+                SELECT 
+                    id,
+                    username,
+                    comment,
+                    timestamp,
+                    'simulated' as type,
+                    avatar_url
+                FROM simulated_comments_2
                 WHERE username = $1
             )
             SELECT * FROM ranked_comments 
@@ -297,15 +462,15 @@ const getUserData = async (req, res, next) => {
     try {
         const { username } = req.params;
         const result = await executeQuery(
-            'SELECT username, first_name, last_name, age, gender, time_left FROM users WHERE username = $1',
+            'SELECT username, test_group, viewer_number, time_left FROM users WHERE username = $1',
             [username]
         );
         
-        if (result.length > 0) {
-            res.json(result[0]);
-        } else {
-            res.status(404).json({ error: 'User not found' });
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
         }
+
+        res.json(result[0]);
     } catch (err) {
         next(err);
     }
@@ -331,10 +496,15 @@ const reportUser = async (req, res, next) => {
 
 const getSimulatedComments = async (req, res, next) => {
     try {
+        const { username } = req.query;
+        const userResult = await pool.query('SELECT test_group FROM users WHERE username = $1', [username]);
+        const testGroup = userResult.rows[0]?.test_group || 'a';
+        const tableNumber = (testGroup === 'a' || testGroup === 'c') ? 1 : 2;
+
         const query = `
             SELECT id, username, avatar_url, comment, timestamp, delay
-            FROM simulated_comments
-            ORDER BY timestamp DESC
+            FROM simulated_comments_${tableNumber}
+            ORDER BY timestamp ASC
         `;
         const comments = await executeQuery(query);
         res.json(comments);
@@ -351,7 +521,11 @@ const addSimulatedComment = async (req, res, next) => {
             return res.status(400).json({ error: 'Username and comment are required' });
         }
 
-        const query = 'INSERT INTO simulated_comments (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)';
+        const userResult = await pool.query('SELECT test_group FROM users WHERE username = $1', [username]);
+        const testGroup = userResult.rows[0]?.test_group || 'a';
+        const tableNumber = (testGroup === 'a' || testGroup === 'c') ? 1 : 2;
+
+        const query = `INSERT INTO simulated_comments_${tableNumber} (username, comment, avatar_url, delay) VALUES ($1, $2, $3, $4)`;
         await executeQuery(query, [username, comment, avatar_url, delay]);
         res.status(201).json({ message: 'Simulated comment added successfully' });
     } catch (err) {
@@ -390,22 +564,19 @@ app.get('/api/time-left/:username', async (req, res) => {
 app.post('/api/update-time', async (req, res) => {
     try {
         const { username, timeLeft } = req.body;
-
-        if (timeLeft < 0) {
-            return res.status(400).json({ error: 'Time left cannot be negative' });
-        }
-
-        const result = await executeQuery(
-            'UPDATE users SET time_left = $1 WHERE username = $2 RETURNING time_left',
-            [Math.max(0, timeLeft), username]
+        
+        // Update time_left in database
+        await pool.query(
+            'UPDATE users SET time_left = $1 WHERE username = $2',
+            [timeLeft, username]
         );
 
-        if (result.length > 0) {
-            // If the update was successful, return the updated time
-            res.json({ timeLeft: result[0].time_left });
-        } else {
-            res.status(404).json({ error: 'User not found' });
+        // If time reached 0, update group counter
+        if (timeLeft === 0) {
+            await updateGroupCounter(username);
         }
+
+        res.json({ success: true });
     } catch (error) {
         console.error('Error updating time:', error);
         res.status(500).json({ error: 'Failed to update time' });
@@ -465,10 +636,29 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         }
 
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
+        const userAgent = req.headers['user-agent'];
+        
+        // Determine device type
+        let deviceType = 'unknown';
+        if (userAgent) {
+            if (/mobile|android|iphone|ipad|ipod/i.test(userAgent)) {
+                deviceType = 'mobile';
+            } else if (/tablet|ipad/i.test(userAgent)) {
+                deviceType = 'tablet';
+            } else {
+                deviceType = 'desktop';
+            }
+        }
 
         // Basic validation
         if (!firstName || !lastName || !age || !gender || !termsAccepted) {
             return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Name validation
+        const nameRegex = /^[A-Z][a-z]*$/;
+        if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+            return res.status(400).json({ error: 'Names must be single words starting with a capital letter' });
         }
 
         // Age validation
@@ -476,44 +666,45 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
             return res.status(400).json({ error: 'You must be at least 18 years old' });
         }
 
-        // Capitalize first letter of each name
-        const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
-        const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
+        // Gender validation
+        const validGenders = ['male', 'female', 'prefer_not_to_say', 'other'];
+        if (!validGenders.includes(gender)) {
+            return res.status(400).json({ error: 'Invalid gender selection' });
+        }
+
+        // Format names (already capitalized from validation)
+        const formattedFirstName = firstName.trim();
+        const formattedLastName = lastName.trim();
         const username = `${formattedFirstName} ${formattedLastName}`;
 
         // Check if user exists
-        const existingUser = await executeQuery(
+        const existingUser = await pool.query(
             'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists',
             [username]
         );
 
-        if (existingUser[0].exists) {
+        if (existingUser.rows[0].exists) {
             return res.status(400).json({ error: 'A user with this name already exists' });
         }
 
         // Get avatar URL
         const avatarUrl = `/uploads/${req.file.filename}`;
 
-        // Insert new user
-        const result = await executeQuery(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             RETURNING username`,
-            [
-                username,
-                formattedFirstName,
-                formattedLastName,
-                age,
-                gender,
-                termsAccepted === 'true',
-                avatarUrl,
-                900 // 15 minutes in seconds
-            ]
+        // Get test group assignment
+        const testGroup = assignTestGroup();
+
+        // Create user with assigned group
+        await pool.query(
+            'INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left, device_type, test_group, viewer_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [username, formattedFirstName, formattedLastName, parseInt(age), gender, termsAccepted === 'true', avatarUrl, 900, deviceType, testGroup.group, testGroup.viewerNumber]
         );
 
+        // Return success response
         res.json({ 
-            username: result[0].username,
-            timeLeft: 900
+            username: username,
+            timeLeft: 900,
+            testGroup: testGroup.group,
+            viewerNumber: testGroup.viewerNumber
         });
     } catch (error) {
         console.error('Error registering user:', error);
@@ -702,4 +893,5 @@ const startServer = () => {
 // Initialize application
 connectToDatabase();
 initializeDatabase();
+initializeGroupCounters();
 startServer();

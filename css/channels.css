@@ -87,19 +87,86 @@
     margin-right: 4px;
 }
 
+.horizontal-channels {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px;
+    gap: 15px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    white-space: nowrap;
+}
+
+.horizontal-channels::-webkit-scrollbar {
+    display: none;
+}
+
+.horizontal-channel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.horizontal-channel:hover {
+    background-color: rgba(139, 92, 246, 0.1);
+}
+
+.horizontal-channel .channel-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-bottom: 5px;
+}
+
+.horizontal-channel .channel-name {
+    font-size: 14px;
+    margin: 0;
+    width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
+    line-height: 1.2;
+    max-height: 2.4em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.horizontal-channel .channel-name:hover {
+    color: #415280;
+}
+
+.horizontal-channel .subscribe-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    width: 100%;
+    min-width: 100px;
+    white-space: nowrap;
+    margin-top: auto;
+}
+
 /* Mobile Responsive Channels */
 @media screen and (max-width: 768px) {
     .channels-sidebar {
         width: 100%;
         height: auto;
-        min-height: 60px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        padding: 5px;
-        position: sticky;
-        top: 50px;
-        z-index: 900;
+        position: relative;
+        top: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        padding: 10px 5px;
+        background: #1f1f23;
     }
 
     .channels-sidebar:hover {
@@ -107,37 +174,81 @@
     }
 
     .channels-header {
-        opacity: 1;
-        padding: 0 10px;
-        white-space: nowrap;
-        font-size: 14px;
+        display: none;
     }
 
     .channel-list {
         display: flex;
         flex-direction: row;
+        gap: 15px;
+        padding: 0 5px;
         overflow-x: auto;
-        padding: 5px;
-        gap: 10px;
-        flex-wrap: nowrap;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        margin-bottom: 0;
+        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;  /* IE and Edge */
     }
 
     .channel-list::-webkit-scrollbar {
-        display: none;
+        display: none; /* Chrome, Safari, Opera */
     }
 
     .channel {
         flex: 0 0 auto;
-        padding: 5px 10px;
-        margin: 0;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 8px;
+        min-width: 70px;
+        border-radius: 10px;
     }
 
     .channel-avatar {
-        width: 30px;
-        height: 30px;
+        width: 45px;
+        height: 45px;
+        margin: 0 0 5px 0;
+    }
+
+    .channel-details {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .channels-sidebar:hover .channel-details {
+        display: block;
+    }
+
+    .channel-name {
+        font-size: 12px;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 70px;
+    }
+
+    .channel-game,
+    .viewer-count {
+        display: none;
+    }
+
+    .horizontal-channel {
+        min-width: 110px;
+        padding: 8px;
+    }
+
+    .horizontal-channel .channel-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .horizontal-channel .channel-name {
+        font-size: 13px;
+    }
+
+    .horizontal-channel .subscribe-btn {
+        padding: 4px 10px;
+        font-size: 11px;
+        min-width: 90px;
     }
 }
 

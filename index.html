@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=portrait">
+    <meta name="screen-orientation" content="portrait">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta http-equiv="Content-Language" content="en">
     <title>FlipLab - Stream Viewer</title>
     <link rel="stylesheet" href="css/login.css">
@@ -30,11 +32,11 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="firstName">First Name:</label>
-                    <input type="text" id="firstName" required>
+                    <input type="text" id="firstName" pattern="^[A-Z][a-z]*$" title="One word starting with a capital letter" required>
                 </div>
                 <div class="form-group">
                     <label for="lastName">Last Name:</label>
-                    <input type="text" id="lastName" required>
+                    <input type="text" id="lastName" pattern="^[A-Z][a-z]*$" title="One word starting with a capital letter" required>
                 </div>
             </div>
             
@@ -50,6 +52,8 @@
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                         <option value="other">Other</option>
+                        <option value="prefer_not_to_say">Prefer not to say</option>
+ 
                     </select>
                 </div>
             </div>
