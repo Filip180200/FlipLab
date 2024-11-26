@@ -90,6 +90,13 @@
     margin-bottom: 20px;
 }
 
+/* Desktop styles */
+@media screen and (min-width: 769px) {
+    .video-section {
+        flex: 1;
+    }
+}
+
 /* Mobile Responsive Layout */
 @media screen and (max-width: 768px) {
     body {
