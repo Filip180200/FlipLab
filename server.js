@@ -203,35 +203,55 @@ const initializeDatabase = async () => {
 const assignTestGroup = async (username) => {
     const groups = ['a', 'b', 'c', 'd'];
     
-    // Get current distribution of groups
-    const groupCounts = await pool.query(
-        'SELECT test_group, COUNT(*) as count FROM users GROUP BY test_group'
-    );
-    
-    // Create a map of group counts, initialize with 0
-    const counts = groups.reduce((acc, group) => ({ ...acc, [group]: 0 }), {});
-    groupCounts.rows.forEach(row => {
-        if (row.test_group) {
-            counts[row.test_group] = parseInt(row.count);
-        }
-    });
-    
-    // Find group with minimum users
-    let minGroup = groups[0];
-    groups.forEach(group => {
-        if (counts[group] < counts[minGroup]) {
-            minGroup = group;
-        }
-    });
-    
-    const viewerNumber = (minGroup === 'a' || minGroup === 'b') ? 124 : 11;
-    
-    await pool.query(
-        'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
-        [minGroup, viewerNumber, username]
-    );
-    
-    return { group: minGroup, viewerNumber };
+    try {
+        // Get current distribution of groups
+        const groupCounts = await pool.query(
+            'SELECT test_group, COUNT(*) as count FROM users GROUP BY test_group'
+        );
+        
+        // Create a map of group counts, initialize with 0
+        const counts = {};
+        groups.forEach(group => counts[group] = 0);
+        
+        // Update counts from database
+        groupCounts.rows.forEach(row => {
+            if (row.test_group && groups.includes(row.test_group)) {
+                counts[row.test_group] = parseInt(row.count);
+            }
+        });
+
+        console.log('Current group distribution:', counts);
+        
+        // Find groups with minimum count
+        const minCount = Math.min(...Object.values(counts));
+        const minGroups = groups.filter(group => counts[group] === minCount);
+        
+        // Randomly select from groups with minimum count
+        const selectedGroup = minGroups[Math.floor(Math.random() * minGroups.length)];
+        const viewerNumber = (selectedGroup === 'a' || selectedGroup === 'b') ? 124 : 11;
+        
+        console.log('Selected group:', selectedGroup, 'from min groups:', minGroups);
+        
+        // Update user's group
+        await pool.query(
+            'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
+            [selectedGroup, viewerNumber, username]
+        );
+        
+        return { group: selectedGroup, viewerNumber };
+    } catch (error) {
+        console.error('Error in group assignment:', error);
+        // Fallback to random group if error occurs
+        const fallbackGroup = groups[Math.floor(Math.random() * groups.length)];
+        const fallbackViewerNumber = (fallbackGroup === 'a' || fallbackGroup === 'b') ? 124 : 11;
+        
+        await pool.query(
+            'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
+            [fallbackGroup, fallbackViewerNumber, username]
+        );
+        
+        return { group: fallbackGroup, viewerNumber: fallbackViewerNumber };
+    }
 };
 
 // Database query helper
