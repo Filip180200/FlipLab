@@ -204,6 +204,13 @@ const assignTestGroup = async (username) => {
     const groups = ['a', 'b', 'c', 'd'];
     
     try {
+        // Get user's previous group if exists
+        const previousGroupResult = await pool.query(
+            'SELECT test_group FROM users WHERE username = $1',
+            [username]
+        );
+        const previousGroup = previousGroupResult.rows[0]?.test_group;
+        
         // Get current distribution of groups
         const groupCounts = await pool.query(
             'SELECT test_group, COUNT(*) as count FROM users GROUP BY test_group'
@@ -221,16 +228,24 @@ const assignTestGroup = async (username) => {
         });
 
         console.log('Current group distribution:', counts);
+        console.log('Previous group:', previousGroup);
         
-        // Find groups with minimum count
+        // Find groups with minimum count, excluding previous group
         const minCount = Math.min(...Object.values(counts));
-        const minGroups = groups.filter(group => counts[group] === minCount);
+        let availableGroups = groups.filter(group => 
+            counts[group] === minCount && group !== previousGroup
+        );
         
-        // Randomly select from groups with minimum count
-        const selectedGroup = minGroups[Math.floor(Math.random() * minGroups.length)];
+        // If no groups available (all have same count), use all groups except previous
+        if (availableGroups.length === 0) {
+            availableGroups = groups.filter(group => group !== previousGroup);
+        }
+        
+        // Randomly select from available groups
+        const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
         const viewerNumber = (selectedGroup === 'a' || selectedGroup === 'b') ? 124 : 11;
         
-        console.log('Selected group:', selectedGroup, 'from min groups:', minGroups);
+        console.log('Selected group:', selectedGroup, 'from available groups:', availableGroups);
         
         // Update user's group
         await pool.query(
@@ -241,8 +256,11 @@ const assignTestGroup = async (username) => {
         return { group: selectedGroup, viewerNumber };
     } catch (error) {
         console.error('Error in group assignment:', error);
-        // Fallback to random group if error occurs
-        const fallbackGroup = groups[Math.floor(Math.random() * groups.length)];
+        // Fallback to random group if error occurs, still avoiding previous group
+        const fallbackGroups = previousGroup ? 
+            groups.filter(g => g !== previousGroup) : 
+            groups;
+        const fallbackGroup = fallbackGroups[Math.floor(Math.random() * fallbackGroups.length)];
         const fallbackViewerNumber = (fallbackGroup === 'a' || fallbackGroup === 'b') ? 124 : 11;
         
         await pool.query(
