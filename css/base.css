@@ -2,13 +2,13 @@
    Base & Reset Styles
    ========================================================================== */
 :root {
-    --bg-primary: #181818;
+    --bg-primary: #0f0f0f;
     --bg-secondary: #242424;
     --bg-dark: #0e0e10;
     --text-primary: #efeff1;
     --text-secondary: #adadb8;
-    --accent-primary: #9147ff;
-    --accent-hover: #7f2cff;
+    --accent-primary: #415280;
+    --accent-hover: #374671;
 }
 
 html {
@@ -17,8 +17,11 @@ html {
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-primary);
-    color: var(--text-primary);
+    color: white;
     overflow: hidden;
+    position: fixed;
+    width: 100%;
+    touch-action: none;
 }
 
 body {
@@ -28,6 +31,9 @@ body {
     color: white;
     overflow: hidden;
     max-height: 100%;
+    position: fixed;
+    width: 100%;
+    touch-action: none;
 }
 
 * {

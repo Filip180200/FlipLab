@@ -18,8 +18,8 @@
 }
 
 .thank-you-icon {
-    font-size: 48px;
-    color: #8b5cf6;
+    font-size: 4em;
+    color: #415280;
     margin-bottom: 20px;
 }
 
@@ -60,8 +60,8 @@
 
 .feedback-form textarea:focus {
     outline: none;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    border-color: #415280;
+    box-shadow: 0 0 0 2px rgba(65, 82, 128, 0.2);
 }
 
 #feedbackSection {
@@ -78,7 +78,7 @@
     width: fit-content;
     margin: 20px auto;
     padding: 10px 20px;
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background: linear-gradient(135deg, #415280, #374671);
     color: white;
     border: none;
     border-radius: 4px;
@@ -89,7 +89,7 @@
 
 .submit-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(65, 82, 128, 0.3);
 }
 
 .submit-btn:active {
