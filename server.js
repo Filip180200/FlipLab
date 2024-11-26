@@ -112,6 +112,12 @@ const initializeDatabase = async () => {
                     WHERE table_name='users' AND column_name='viewer_number') THEN
                     ALTER TABLE users ADD COLUMN viewer_number INTEGER;
                 END IF;
+
+                -- Add device_type column if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='device_type') THEN
+                    ALTER TABLE users ADD COLUMN device_type VARCHAR(50);
+                END IF;
             END $$;
 
             -- Update viewer numbers based on test group
@@ -569,6 +575,19 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         }
 
         const { firstName, lastName, age, gender, termsAccepted } = req.body;
+        const userAgent = req.headers['user-agent'];
+        
+        // Determine device type
+        let deviceType = 'unknown';
+        if (userAgent) {
+            if (/mobile|android|iphone|ipad|ipod/i.test(userAgent)) {
+                deviceType = 'mobile';
+            } else if (/tablet|ipad/i.test(userAgent)) {
+                deviceType = 'tablet';
+            } else {
+                deviceType = 'desktop';
+            }
+        }
 
         // Basic validation
         if (!firstName || !lastName || !age || !gender || !termsAccepted) {
@@ -598,31 +617,18 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         // Get avatar URL
         const avatarUrl = `/uploads/${req.file.filename}`;
 
-        // Insert new user
-        const result = await executeQuery(
-            `INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             RETURNING username`,
-            [
-                username,
-                formattedFirstName,
-                formattedLastName,
-                age,
-                gender,
-                termsAccepted === 'true',
-                avatarUrl,
-                900 // 15 minutes in seconds
-            ]
+        // Insert new user with device type
+        const testGroup = await assignTestGroup(username);
+        await executeQuery(
+            'INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left, device_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted === 'true', avatarUrl, 900, deviceType]
         );
 
-        // Assign test group
-        const { group, viewerNumber } = await assignTestGroup(username);
-
         res.json({ 
-            username: result[0].username,
+            username: username,
             timeLeft: 900,
-            testGroup: group,
-            viewerNumber
+            testGroup: testGroup.group,
+            viewerNumber: testGroup.viewerNumber
         });
     } catch (error) {
         console.error('Error registering user:', error);
