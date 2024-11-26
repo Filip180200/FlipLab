@@ -208,12 +208,14 @@
 }
 
 .subscribe-btn {
-    background: rgba(65, 82, 128, 0.15);
-    color: #415280;
+    background: rgba(65, 82, 128, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(65, 82, 128, 0.3);
 }
 
 .subscribe-btn:hover {
-    background: rgba(65, 82, 128, 0.25);
+    background: rgba(65, 82, 128, 0.2);
+    border-color: rgba(65, 82, 128, 0.4);
 }
 
 .viewer-count {
