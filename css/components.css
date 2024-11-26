@@ -218,6 +218,16 @@
     border-color: rgba(65, 82, 128, 0.4);
 }
 
+.subscribe-btn.used {
+    background: rgb(37 2 89);
+    color: var(--text-primary);
+    border: none;
+}
+
+.subscribe-btn.used:hover {
+    background: rgba(37, 2, 89, 0.9);
+}
+
 .viewer-count {
     display: flex;
     align-items: center;
