@@ -202,14 +202,36 @@ const initializeDatabase = async () => {
 // Add test group assignment to registration
 const assignTestGroup = async (username) => {
     const groups = ['a', 'b', 'c', 'd'];
-    const randomGroup = groups[Math.floor(Math.random() * groups.length)];
-    const viewerNumber = (randomGroup === 'a' || randomGroup === 'b') ? 124 : 11;
+    
+    // Get current distribution of groups
+    const groupCounts = await pool.query(
+        'SELECT test_group, COUNT(*) as count FROM users GROUP BY test_group'
+    );
+    
+    // Create a map of group counts, initialize with 0
+    const counts = groups.reduce((acc, group) => ({ ...acc, [group]: 0 }), {});
+    groupCounts.rows.forEach(row => {
+        if (row.test_group) {
+            counts[row.test_group] = parseInt(row.count);
+        }
+    });
+    
+    // Find group with minimum users
+    let minGroup = groups[0];
+    groups.forEach(group => {
+        if (counts[group] < counts[minGroup]) {
+            minGroup = group;
+        }
+    });
+    
+    const viewerNumber = (minGroup === 'a' || minGroup === 'b') ? 124 : 11;
     
     await pool.query(
         'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
-        [randomGroup, viewerNumber, username]
+        [minGroup, viewerNumber, username]
     );
-    return { group: randomGroup, viewerNumber };
+    
+    return { group: minGroup, viewerNumber };
 };
 
 // Database query helper
