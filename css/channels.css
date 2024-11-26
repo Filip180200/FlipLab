@@ -44,7 +44,7 @@
 }
 
 .channel:hover {
-    background: rgba(65, 82, 128, 0.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .channel-avatar {
@@ -69,17 +69,13 @@
     margin-bottom: 2px;
 }
 
-.channel-name:hover {
-    color: #415280;
-}
-
 .channel-game {
     color: #adadb8;
     font-size: 13px;
 }
 
 .viewer-count {
-    color: #415280;
+    color: #adadb8;
     font-size: 13px;
     margin-left: auto;
     white-space: nowrap;
@@ -120,7 +116,7 @@
 }
 
 .horizontal-channel:hover {
-    background-color: rgba(65, 82, 128, 0.1);
+    background-color: rgba(139, 92, 246, 0.1);
 }
 
 .horizontal-channel .channel-avatar {
@@ -230,10 +226,6 @@
         max-width: 70px;
     }
 
-    .channel-name:hover {
-        color: #415280;
-    }
-
     .channel-game,
     .viewer-count {
         display: none;
@@ -251,10 +243,6 @@
 
     .horizontal-channel .channel-name {
         font-size: 13px;
-    }
-
-    .horizontal-channel .channel-name:hover {
-        color: #415280;
     }
 
     .horizontal-channel .subscribe-btn {
@@ -278,4 +266,3 @@
         font-size: 12px;
     }
 }
-{{ ... }}

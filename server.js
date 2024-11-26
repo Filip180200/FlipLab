@@ -199,97 +199,60 @@ const initializeDatabase = async () => {
     }
 };
 
+// Group counters for even distribution
+let groupCounters = {
+    a: 0,
+    b: 0,
+    c: 0,
+    d: 0
+};
+
 // Add test group assignment to registration
-const assignTestGroup = async (username) => {
+const assignTestGroup = () => {
     const groups = ['a', 'b', 'c', 'd'];
     
+    // Find group(s) with minimum count
+    const minCount = Math.min(...Object.values(groupCounters));
+    const availableGroups = groups.filter(group => groupCounters[group] === minCount);
+    
+    // Select random group from available ones
+    const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
+    
+    // Increment counter for selected group
+    groupCounters[selectedGroup]++;
+    
+    // Log current distribution
+    console.log('Group distribution after assignment:', groupCounters);
+    
+    const viewerNumber = (selectedGroup === 'a' || selectedGroup === 'b') ? 124 : 11;
+    return { group: selectedGroup, viewerNumber };
+};
+
+// Initialize group counters from database on startup
+const initializeGroupCounters = async () => {
     try {
-        // Get user's previous group if exists
-        const previousGroupResult = await pool.query(
-            'SELECT test_group FROM users WHERE username = $1',
-            [username]
-        );
-        const previousGroup = previousGroupResult.rows[0]?.test_group;
-        
-        // Get current distribution of groups
-        const groupCounts = await pool.query(
+        const result = await pool.query(
             'SELECT test_group, COUNT(*) as count FROM users GROUP BY test_group'
         );
         
-        // Create a map of group counts, initialize with 0
-        const counts = {};
-        groups.forEach(group => counts[group] = 0);
+        // Reset counters
+        groupCounters = {
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0
+        };
         
-        // Update counts from database
-        groupCounts.rows.forEach(row => {
-            if (row.test_group && groups.includes(row.test_group)) {
-                counts[row.test_group] = parseInt(row.count);
+        // Update counters from database
+        result.rows.forEach(row => {
+            if (row.test_group && groupCounters.hasOwnProperty(row.test_group)) {
+                groupCounters[row.test_group] = parseInt(row.count);
             }
         });
-
-        console.log('Current group distribution:', counts);
-        console.log('Previous group:', previousGroup);
         
-        // Find groups with minimum count, excluding previous group
-        const minCount = Math.min(...Object.values(counts));
-        let availableGroups = groups.filter(group => 
-            counts[group] === minCount && group !== previousGroup
-        );
-        
-        // If no groups available (all have same count), use all groups except previous
-        if (availableGroups.length === 0) {
-            availableGroups = groups.filter(group => group !== previousGroup);
-        }
-        
-        // Randomly select from available groups
-        const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
-        const viewerNumber = (selectedGroup === 'a' || selectedGroup === 'b') ? 124 : 11;
-        
-        console.log('Selected group:', selectedGroup, 'from available groups:', availableGroups);
-        
-        // First, verify if the user exists
-        const userExists = await pool.query(
-            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
-            [username]
-        );
-
-        if (userExists.rows[0].exists) {
-            // Update existing user
-            await pool.query(
-                'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
-                [selectedGroup, viewerNumber, username]
-            );
-        } else {
-            // Insert new user with group
-            await pool.query(
-                'INSERT INTO users (username, test_group, viewer_number) VALUES ($1, $2, $3)',
-                [username, selectedGroup, viewerNumber]
-            );
-        }
-
-        // Verify the update
-        const verifyUpdate = await pool.query(
-            'SELECT test_group FROM users WHERE username = $1',
-            [username]
-        );
-        console.log('Verified group after update:', verifyUpdate.rows[0]?.test_group);
-        
-        return { group: selectedGroup, viewerNumber };
+        console.log('Initialized group counters:', groupCounters);
     } catch (error) {
-        console.error('Error in group assignment:', error);
-        // Fallback to random group if error occurs, still avoiding previous group
-        const fallbackGroups = previousGroup ? 
-            groups.filter(g => g !== previousGroup) : 
-            groups;
-        const fallbackGroup = fallbackGroups[Math.floor(Math.random() * fallbackGroups.length)];
-        const fallbackViewerNumber = (fallbackGroup === 'a' || fallbackGroup === 'b') ? 124 : 11;
-        
-        await pool.query(
-            'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
-            [fallbackGroup, fallbackViewerNumber, username]
-        );
-        
-        return { group: fallbackGroup, viewerNumber: fallbackViewerNumber };
+        console.error('Error initializing group counters:', error);
     }
 };
 
@@ -698,27 +661,28 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         const username = `${formattedFirstName} ${formattedLastName}`;
 
         // Check if user exists
-        const existingUser = await executeQuery(
+        const existingUser = await pool.query(
             'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists',
             [username]
         );
 
-        if (existingUser[0].exists) {
+        if (existingUser.rows[0].exists) {
             return res.status(400).json({ error: 'A user with this name already exists' });
         }
 
         // Get avatar URL
         const avatarUrl = `/uploads/${req.file.filename}`;
 
-        // First assign test group
-        const testGroup = await assignTestGroup(username);
+        // Get test group assignment
+        const testGroup = assignTestGroup();
 
-        // Then create user with assigned group
-        await executeQuery(
+        // Create user with assigned group
+        await pool.query(
             'INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left, device_type, test_group, viewer_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted === 'true', avatarUrl, 900, deviceType, testGroup.group, testGroup.viewerNumber]
+            [username, formattedFirstName, formattedLastName, parseInt(age), gender, termsAccepted === 'true', avatarUrl, 900, deviceType, testGroup.group, testGroup.viewerNumber]
         );
 
+        // Return success response
         res.json({ 
             username: username,
             timeLeft: 900,
@@ -912,4 +876,5 @@ const startServer = () => {
 // Initialize application
 connectToDatabase();
 initializeDatabase();
+initializeGroupCounters();
 startServer();
