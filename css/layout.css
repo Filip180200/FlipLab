@@ -114,6 +114,9 @@
     .main-content {
         flex-direction: column;
         gap: 10px;
+        min-height: auto;
+        height: auto;
+        padding: 0;
     }
 
     .video-section {
