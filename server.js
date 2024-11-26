@@ -247,11 +247,32 @@ const assignTestGroup = async (username) => {
         
         console.log('Selected group:', selectedGroup, 'from available groups:', availableGroups);
         
-        // Update user's group
-        await pool.query(
-            'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
-            [selectedGroup, viewerNumber, username]
+        // First, verify if the user exists
+        const userExists = await pool.query(
+            'SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)',
+            [username]
         );
+
+        if (userExists.rows[0].exists) {
+            // Update existing user
+            await pool.query(
+                'UPDATE users SET test_group = $1, viewer_number = $2 WHERE username = $3',
+                [selectedGroup, viewerNumber, username]
+            );
+        } else {
+            // Insert new user with group
+            await pool.query(
+                'INSERT INTO users (username, test_group, viewer_number) VALUES ($1, $2, $3)',
+                [username, selectedGroup, viewerNumber]
+            );
+        }
+
+        // Verify the update
+        const verifyUpdate = await pool.query(
+            'SELECT test_group FROM users WHERE username = $1',
+            [username]
+        );
+        console.log('Verified group after update:', verifyUpdate.rows[0]?.test_group);
         
         return { group: selectedGroup, viewerNumber };
     } catch (error) {
@@ -689,11 +710,13 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
         // Get avatar URL
         const avatarUrl = `/uploads/${req.file.filename}`;
 
-        // Insert new user with device type
+        // First assign test group
         const testGroup = await assignTestGroup(username);
+
+        // Then create user with assigned group
         await executeQuery(
-            'INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left, device_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted === 'true', avatarUrl, 900, deviceType]
+            'INSERT INTO users (username, first_name, last_name, age, gender, terms_accepted, avatar_url, time_left, device_type, test_group, viewer_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [username, formattedFirstName, formattedLastName, age, gender, termsAccepted === 'true', avatarUrl, 900, deviceType, testGroup.group, testGroup.viewerNumber]
         );
 
         res.json({ 
