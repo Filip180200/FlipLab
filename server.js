@@ -594,14 +594,26 @@ app.post('/api/register', upload.single('avatar'), async (req, res) => {
             return res.status(400).json({ error: 'All fields are required' });
         }
 
+        // Name validation
+        const nameRegex = /^[A-Z][a-z]*$/;
+        if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+            return res.status(400).json({ error: 'Names must be single words starting with a capital letter' });
+        }
+
         // Age validation
         if (parseInt(age) < 18) {
             return res.status(400).json({ error: 'You must be at least 18 years old' });
         }
 
-        // Capitalize first letter of each name
-        const formattedFirstName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
-        const formattedLastName = lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase();
+        // Gender validation
+        const validGenders = ['male', 'female', 'prefer_not_to_say', 'other'];
+        if (!validGenders.includes(gender)) {
+            return res.status(400).json({ error: 'Invalid gender selection' });
+        }
+
+        // Format names (already capitalized from validation)
+        const formattedFirstName = firstName.trim();
+        const formattedLastName = lastName.trim();
         const username = `${formattedFirstName} ${formattedLastName}`;
 
         // Check if user exists
