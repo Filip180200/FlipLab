@@ -64,16 +64,27 @@
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
 }
 
+#feedbackSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
 .submit-btn {
+    display: block;
+    width: fit-content;
+    margin: 20px auto;
+    padding: 10px 20px;
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    margin-top: 10px;
 }
 
 .submit-btn:hover {
@@ -133,4 +144,22 @@
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* Kontakt Styles */
+.contact-info {
+    margin-top: 30px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.email-link {
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.email-link:hover {
+    text-decoration: underline;
 }
