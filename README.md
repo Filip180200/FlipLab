@@ -53,3 +53,7 @@ We welcome contributions to improve this project! Here's how you can help:
 This project is licensed under the MIT License.  
 
 Feel free to adapt this further to your needs! Let me know if you'd like to refine any specific section.
+
+
+## Database schema
+![image](https://github.com/user-attachments/assets/01492dd8-8b35-47fd-971e-87811c8ec055)
